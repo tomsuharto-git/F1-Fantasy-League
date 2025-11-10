@@ -201,7 +201,7 @@ export default function SignInPage() {
           </div>
         </div>
 
-        <div className="bg-gray-800 rounded-lg p-6 shadow-xl">
+        <div className="bg-black rounded-lg p-6 shadow-xl border border-gray-800">
           {/* Social Sign In Buttons */}
           <div className="space-y-3 mb-6">
             <button
@@ -250,7 +250,7 @@ export default function SignInPage() {
               <div className="w-full border-t border-gray-700"></div>
             </div>
             <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-gray-800 text-gray-400">or</span>
+              <span className="px-2 bg-black text-gray-400">or</span>
             </div>
           </div>
 
@@ -264,7 +264,7 @@ export default function SignInPage() {
               }}
               className={`flex-1 py-2 px-4 rounded-lg font-medium transition-colors ${
                 authMethod === 'email'
-                  ? 'bg-blue-600 text-white'
+                  ? 'bg-gradient-to-r from-[#D2B83E] to-[#B42518] text-white'
                   : 'bg-gray-700 text-gray-400 hover:bg-gray-600'
               }`}
             >
@@ -279,7 +279,7 @@ export default function SignInPage() {
               }}
               className={`flex-1 py-2 px-4 rounded-lg font-medium transition-colors ${
                 authMethod === 'phone'
-                  ? 'bg-blue-600 text-white'
+                  ? 'bg-gradient-to-r from-[#D2B83E] to-[#B42518] text-white'
                   : 'bg-gray-700 text-gray-400 hover:bg-gray-600'
               }`}
             >
@@ -340,7 +340,7 @@ export default function SignInPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full py-3 bg-gradient-to-r from-[#D2B83E] to-[#B42518] hover:from-[#E5C94F] hover:to-[#C53829] text-white rounded-lg font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? 'Please wait...' : isSignUp ? 'Create Account' : 'Sign In'}
             </button>
@@ -371,7 +371,7 @@ export default function SignInPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full py-3 bg-gradient-to-r from-[#D2B83E] to-[#B42518] hover:from-[#E5C94F] hover:to-[#C53829] text-white rounded-lg font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {loading ? 'Sending...' : 'Send OTP Code'}
               </button>
@@ -414,7 +414,7 @@ export default function SignInPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full py-3 bg-gradient-to-r from-[#D2B83E] to-[#B42518] hover:from-[#E5C94F] hover:to-[#C53829] text-white rounded-lg font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {loading ? 'Verifying...' : 'Verify & Sign In'}
               </button>
@@ -422,7 +422,7 @@ export default function SignInPage() {
               <button
                 type="button"
                 onClick={() => setOtpSent(false)}
-                className="w-full py-2 text-sm text-blue-400 hover:text-blue-300"
+                className="w-full py-2 text-sm text-[#D2B83E] hover:text-[#E5C94F]"
                 disabled={loading}
               >
                 Use a different phone number
@@ -435,7 +435,7 @@ export default function SignInPage() {
             <div className="mt-6 text-center">
               <button
                 onClick={() => setIsSignUp(!isSignUp)}
-                className="text-sm text-blue-400 hover:text-blue-300"
+                className="text-sm text-[#D2B83E] hover:text-[#E5C94F]"
                 disabled={loading}
               >
                 {isSignUp ? 'Already have an account? Sign in' : "Don't have an account? Sign up"}
