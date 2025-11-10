@@ -139,7 +139,13 @@ export default function DashboardPage() {
 
           {leagues.length === 0 ? (
             <div className="text-center py-12">
-              <div className="text-6xl mb-4">🏎️</div>
+              <div className="flex justify-center mb-4">
+                <img
+                  src="/grid-kings-logo.png"
+                  alt="Grid Kings Logo"
+                  className="h-32 w-auto opacity-50"
+                />
+              </div>
               <p className="text-gray-400 mb-4">
                 You haven't joined any leagues yet
               </p>
