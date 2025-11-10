@@ -4,6 +4,7 @@ export type LeagueType = 'race_day' | 'season_league';
 export type LeagueStatus = 'setup' | 'active' | 'complete';
 export type RaceStatus = 'upcoming' | 'drafting' | 'live' | 'complete';
 export type DataSource = 'api' | 'manual';
+export type LiveConnectionStatus = 'connected' | 'connecting' | 'disconnected' | 'error';
 
 // ============================================================================
 // LEAGUE
