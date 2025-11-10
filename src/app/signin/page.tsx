@@ -188,29 +188,17 @@ export default function SignInPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
+    <div className="min-h-screen flex items-center justify-center p-4 bg-[#0a0a0a]">
       <div className="w-full max-w-md">
         {/* Header */}
         <div className="text-center mb-8">
-          <div className="flex justify-center mb-4">
+          <div className="flex justify-center">
             <img
               src="/grid-kings-logo.png"
               alt="Grid Kings Logo"
-              className="h-24 w-auto"
+              className="h-32 w-auto"
             />
           </div>
-          <h1 className="text-3xl font-bold mb-2 bg-gradient-to-r from-red-500 to-orange-500 bg-clip-text text-transparent">
-            F1 Fantasy League
-          </h1>
-          <p className="text-gray-400">
-            {authMethod === 'phone' && otpSent
-              ? 'Enter verification code'
-              : authMethod === 'phone'
-              ? 'Sign in with phone number'
-              : isSignUp
-              ? 'Create your account'
-              : 'Sign in to continue'}
-          </p>
         </div>
 
         <div className="bg-gray-800 rounded-lg p-6 shadow-xl">
