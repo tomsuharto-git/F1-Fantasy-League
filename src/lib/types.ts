@@ -198,6 +198,7 @@ export interface OpenF1Lap {
   lap_number: number;
   lap_duration: number;
   is_pit_out_lap: boolean;
+  _key?: string;
 }
 
 export interface OpenF1Session {
