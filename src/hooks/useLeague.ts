@@ -18,10 +18,10 @@ export function useLeague(leagueId: string | null) {
       return;
     }
 
-    async function fetchLeague() {
+    async function fetchLeague(id: string) {
       try {
         setLoading(true);
-        const data = await getLeague(leagueId);
+        const data = await getLeague(id);
         setLeague(data);
         setError(null);
       } catch (err) {
@@ -32,7 +32,7 @@ export function useLeague(leagueId: string | null) {
       }
     }
 
-    fetchLeague();
+    fetchLeague(leagueId);
   }, [leagueId]);
 
   const refresh = async () => {
