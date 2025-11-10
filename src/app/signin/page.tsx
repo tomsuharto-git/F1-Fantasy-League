@@ -201,7 +201,7 @@ export default function SignInPage() {
           </div>
         </div>
 
-        <div className="bg-black rounded-lg p-6 shadow-xl border border-gray-800">
+        <div className="bg-[#1A1A1A] rounded-lg p-6 shadow-xl border border-gray-800">
           {/* Social Sign In Buttons */}
           <div className="space-y-3 mb-6">
             <button
@@ -250,7 +250,7 @@ export default function SignInPage() {
               <div className="w-full border-t border-gray-700"></div>
             </div>
             <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-black text-gray-400">or</span>
+              <span className="px-2 bg-[#1A1A1A] text-gray-400">or</span>
             </div>
           </div>
 
