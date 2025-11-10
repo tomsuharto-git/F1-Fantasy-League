@@ -9,12 +9,16 @@ export default function SignInPage() {
   const router = useRouter();
   const supabase = createClient();
 
+  const [authMethod, setAuthMethod] = useState<'email' | 'phone'>('email');
   const [isSignUp, setIsSignUp] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [otpSent, setOtpSent] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
     password: '',
-    confirmPassword: ''
+    confirmPassword: '',
+    phone: '',
+    otp: ''
   });
 
   // Email/Password Sign In
@@ -127,6 +131,62 @@ export default function SignInPage() {
     // Don't set loading to false - user is being redirected
   };
 
+  // Phone Sign In - Send OTP
+  const handlePhoneSendOTP = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!formData.phone) {
+      showNotification('Please enter your phone number', 'error');
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const { data, error } = await supabase.auth.signInWithOtp({
+        phone: formData.phone,
+      });
+
+      if (error) throw error;
+
+      setOtpSent(true);
+      showNotification('OTP code sent to your phone!', 'success');
+    } catch (error: any) {
+      showNotification(error.message || 'Failed to send OTP', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Phone Sign In - Verify OTP
+  const handlePhoneVerifyOTP = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!formData.phone || !formData.otp) {
+      showNotification('Please enter both phone number and OTP code', 'error');
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const { data, error } = await supabase.auth.verifyOtp({
+        phone: formData.phone,
+        token: formData.otp,
+        type: 'sms',
+      });
+
+      if (error) throw error;
+
+      showNotification('Signed in successfully!', 'success');
+      router.push('/dashboard');
+    } catch (error: any) {
+      showNotification(error.message || 'Invalid OTP code', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
       <div className="w-full max-w-md">
@@ -136,7 +196,13 @@ export default function SignInPage() {
             🏎️ F1 Fantasy League
           </h1>
           <p className="text-gray-400">
-            {isSignUp ? 'Create your account' : 'Sign in to continue'}
+            {authMethod === 'phone' && otpSent
+              ? 'Enter verification code'
+              : authMethod === 'phone'
+              ? 'Sign in with phone number'
+              : isSignUp
+              ? 'Create your account'
+              : 'Sign in to continue'}
           </p>
         </div>
 
@@ -193,8 +259,42 @@ export default function SignInPage() {
             </div>
           </div>
 
+          {/* Auth Method Toggle */}
+          <div className="flex gap-2 mb-6">
+            <button
+              type="button"
+              onClick={() => {
+                setAuthMethod('email');
+                setOtpSent(false);
+              }}
+              className={`flex-1 py-2 px-4 rounded-lg font-medium transition-colors ${
+                authMethod === 'email'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-gray-700 text-gray-400 hover:bg-gray-600'
+              }`}
+            >
+              Email
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setAuthMethod('phone');
+                setIsSignUp(false);
+                setOtpSent(false);
+              }}
+              className={`flex-1 py-2 px-4 rounded-lg font-medium transition-colors ${
+                authMethod === 'phone'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-gray-700 text-gray-400 hover:bg-gray-600'
+              }`}
+            >
+              Phone
+            </button>
+          </div>
+
           {/* Email/Password Form */}
-          <form onSubmit={isSignUp ? handleEmailSignUp : handleEmailSignIn} className="space-y-4">
+          {authMethod === 'email' && (
+            <form onSubmit={isSignUp ? handleEmailSignUp : handleEmailSignIn} className="space-y-4">
             <div>
               <label htmlFor="email" className="block text-sm font-medium mb-2">
                 Email
@@ -250,17 +350,103 @@ export default function SignInPage() {
               {loading ? 'Please wait...' : isSignUp ? 'Create Account' : 'Sign In'}
             </button>
           </form>
+          )}
 
-          {/* Toggle Sign Up / Sign In */}
-          <div className="mt-6 text-center">
-            <button
-              onClick={() => setIsSignUp(!isSignUp)}
-              className="text-sm text-blue-400 hover:text-blue-300"
-              disabled={loading}
-            >
-              {isSignUp ? 'Already have an account? Sign in' : "Don't have an account? Sign up"}
-            </button>
-          </div>
+          {/* Phone OTP Form */}
+          {authMethod === 'phone' && !otpSent && (
+            <form onSubmit={handlePhoneSendOTP} className="space-y-4">
+              <div>
+                <label htmlFor="phone" className="block text-sm font-medium mb-2">
+                  Phone Number
+                </label>
+                <input
+                  id="phone"
+                  type="tel"
+                  value={formData.phone}
+                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                  placeholder="+1 (555) 000-0000"
+                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:border-blue-500"
+                  disabled={loading}
+                />
+                <p className="text-xs text-gray-400 mt-1">
+                  Include country code (e.g., +1 for US)
+                </p>
+              </div>
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {loading ? 'Sending...' : 'Send OTP Code'}
+              </button>
+            </form>
+          )}
+
+          {/* Phone OTP Verification Form */}
+          {authMethod === 'phone' && otpSent && (
+            <form onSubmit={handlePhoneVerifyOTP} className="space-y-4">
+              <div>
+                <label htmlFor="phone-verify" className="block text-sm font-medium mb-2">
+                  Phone Number
+                </label>
+                <input
+                  id="phone-verify"
+                  type="tel"
+                  value={formData.phone}
+                  disabled
+                  className="w-full px-3 py-2 bg-gray-600 border border-gray-600 rounded-lg text-gray-400"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="otp" className="block text-sm font-medium mb-2">
+                  Verification Code
+                </label>
+                <input
+                  id="otp"
+                  type="text"
+                  value={formData.otp}
+                  onChange={(e) => setFormData({ ...formData, otp: e.target.value })}
+                  placeholder="Enter 6-digit code"
+                  maxLength={6}
+                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:border-blue-500 text-center text-2xl tracking-widest"
+                  disabled={loading}
+                  autoFocus
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {loading ? 'Verifying...' : 'Verify & Sign In'}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setOtpSent(false)}
+                className="w-full py-2 text-sm text-blue-400 hover:text-blue-300"
+                disabled={loading}
+              >
+                Use a different phone number
+              </button>
+            </form>
+          )}
+
+          {/* Toggle Sign Up / Sign In - Only for Email */}
+          {authMethod === 'email' && (
+            <div className="mt-6 text-center">
+              <button
+                onClick={() => setIsSignUp(!isSignUp)}
+                className="text-sm text-blue-400 hover:text-blue-300"
+                disabled={loading}
+              >
+                {isSignUp ? 'Already have an account? Sign in' : "Don't have an account? Sign up"}
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Footer */}
