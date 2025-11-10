@@ -4,7 +4,6 @@ export type LeagueType = 'race_day' | 'season_league';
 export type LeagueStatus = 'setup' | 'active' | 'complete';
 export type RaceStatus = 'upcoming' | 'drafting' | 'live' | 'complete';
 export type DataSource = 'api' | 'manual';
-export type LiveConnectionStatus = 'connected' | 'connecting' | 'disconnected' | 'error';
 
 // ============================================================================
 // LEAGUE
@@ -198,7 +197,6 @@ export interface OpenF1Lap {
   lap_number: number;
   lap_duration: number;
   is_pit_out_lap: boolean;
-  _key?: string;
 }
 
 export interface OpenF1Session {
@@ -208,13 +206,6 @@ export interface OpenF1Session {
   date_end: string;
   location: string;
   country_name: string;
-}
-
-export interface OpenF1TokenResponse {
-  access_token: string;
-  token_type: string;
-  expires_in: number;
-  cached?: boolean;
 }
 
 // Ergast API

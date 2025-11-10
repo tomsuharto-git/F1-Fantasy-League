@@ -11,17 +11,6 @@ const config: Config = {
       colors: {
         background: 'var(--background)',
         foreground: 'var(--foreground)',
-        'grid-kings': {
-          bg: '#1A1A1A',
-          gold: '#D2B83E',
-          'gold-light': '#E5C94F',
-          red: '#B42518',
-          'red-light': '#C53829',
-        },
-      },
-      backgroundImage: {
-        'grid-kings-gradient': 'linear-gradient(to right, #D2B83E, #B42518)',
-        'grid-kings-gradient-hover': 'linear-gradient(to right, #E5C94F, #C53829)',
       },
       animation: {
         'slide-in-right': 'slideInRight 0.3s ease-out',

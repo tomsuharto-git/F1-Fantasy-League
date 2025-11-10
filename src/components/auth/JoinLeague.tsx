@@ -2,8 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { createClient } from '@/lib/auth/client';
-import { showNotification } from '@/components/shared/NotificationSystem';
 import type { League, Player } from '@/lib/types';
 
 interface JoinLeagueProps {
@@ -12,66 +10,41 @@ interface JoinLeagueProps {
 
 export function JoinLeague({ league }: JoinLeagueProps) {
   const router = useRouter();
-  const supabase = createClient();
-
   const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
-  // Check if user is authenticated and if they've already joined this league
+  // Check if user already claimed a team
   useEffect(() => {
-    async function checkAuth() {
-      const { data: { user } } = await supabase.auth.getUser();
-
-      if (!user) {
-        showNotification('You must be logged in to join a league', 'error');
-        router.push('/signin');
-        return;
-      }
-
-      setCurrentUserId(user.id);
-
-      // Check if user already has a player in this league
-      const existingPlayer = league.players?.find(p => p.user_id === user.id);
-      if (existingPlayer) {
-        showNotification('You have already joined this league', 'info');
-        router.push(`/league/${league.id}/waiting-room`);
-      }
+    const storedPlayerId = localStorage.getItem(`league_${league.id}_player`);
+    if (storedPlayerId) {
+      router.push(`/league/${league.id}/waiting-room`);
     }
-
-    checkAuth();
-  }, [league, router, supabase]);
+  }, [league.id, router]);
 
   const handleJoin = async () => {
-    if (!selectedTeamId || !currentUserId) return;
+    if (!selectedTeamId) return;
 
     try {
       setLoading(true);
 
-      // Update the player record to assign it to the current user
-      const { error } = await supabase
-        .from('players')
-        .update({
-          user_id: currentUserId,
-          is_verified: true
-        })
-        .eq('id', selectedTeamId)
-        .is('user_id', null); // Only update if not already claimed
+      // Store the selected team (player) ID in localStorage
+      localStorage.setItem(`league_${league.id}_player`, selectedTeamId);
 
-      if (error) throw error;
-
-      showNotification('Successfully joined league!', 'success');
       router.push(`/league/${league.id}/waiting-room`);
     } catch (error) {
       console.error('Failed to join league:', error);
-      showNotification('Failed to join league. This team may have been claimed by someone else.', 'error');
+      alert('Failed to join league. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
-  // Get unclaimed teams (players without user_id)
-  const availableTeams = league.players?.filter(player => !player.user_id) || [];
+  // Get unclaimed teams (players)
+  const availableTeams = league.players?.filter(player => {
+    // Check if team is already claimed (has localStorage entry)
+    const claimed = localStorage.getItem(`league_${league.id}_player`) === player.id;
+    return !claimed;
+  }) || [];
 
   return (
     <div className="max-w-2xl mx-auto p-6">

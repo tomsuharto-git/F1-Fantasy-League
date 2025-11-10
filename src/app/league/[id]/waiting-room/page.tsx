@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { createClient } from '@/lib/auth/client';
 import { useLeague } from '@/hooks/useLeague';
 import { usePlayerReadyRealtime } from '@/hooks/useRealtime';
 import { showNotification } from '@/components/shared/NotificationSystem';
@@ -15,42 +14,15 @@ interface WaitingRoomProps {
 
 export default function WaitingRoomPage({ params }: WaitingRoomProps) {
   const router = useRouter();
-  const supabase = createClient();
   const { league, loading, error, toggleReady, refresh } = useLeague(params.id);
   const [currentPlayerId, setCurrentPlayerId] = useState<string | null>(null);
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
-  // Get current user and find their player in this league
+  // Get current player from localStorage
   useEffect(() => {
-    async function checkAuth() {
-      const { data: { user } } = await supabase.auth.getUser();
-
-      if (!user) {
-        showNotification('You must be logged in', 'error');
-        router.push('/signin');
-        return;
-      }
-
-      setCurrentUserId(user.id);
-
-      // Find the player associated with this user in this league
-      if (league?.players) {
-        const player = league.players.find(p => p.user_id === user.id);
-        if (player) {
-          setCurrentPlayerId(player.id);
-        } else {
-          // User is not in this league
-          showNotification('You are not a member of this league', 'warning');
-          router.push('/dashboard');
-        }
-      }
-    }
-
-    if (league) {
-      checkAuth();
-    }
-  }, [league, params.id, router, supabase]);
+    const playerId = localStorage.getItem(`league_${params.id}_player`);
+    setCurrentPlayerId(playerId);
+  }, [params.id]);
 
   // Real-time updates for player ready status
   usePlayerReadyRealtime(params.id, () => {
@@ -179,8 +151,8 @@ export default function WaitingRoomPage({ params }: WaitingRoomProps) {
                     className="w-6 h-6 rounded-full"
                     style={{ backgroundColor: player.color }}
                   />
-
-                  {/* Player name and status */}
+                  
+                  {/* Player name */}
                   <div>
                     <p className="font-medium">
                       {player.display_name}
@@ -188,30 +160,20 @@ export default function WaitingRoomPage({ params }: WaitingRoomProps) {
                         <span className="ml-2 text-xs text-blue-400">(You)</span>
                       )}
                     </p>
-                    <div className="flex items-center gap-2 text-sm text-gray-400">
-                      {player.draft_position && (
-                        <span>Draft position: {player.draft_position}</span>
-                      )}
-                      {!player.user_id && (
-                        <>
-                          {player.draft_position && <span>•</span>}
-                          <span className="text-yellow-400">Waiting to join</span>
-                        </>
-                      )}
-                    </div>
+                    {player.draft_position && (
+                      <p className="text-sm text-gray-400">
+                        Draft position: {player.draft_position}
+                      </p>
+                    )}
                   </div>
                 </div>
 
                 {/* Ready status */}
                 <div className="flex items-center gap-2">
-                  {player.user_id ? (
-                    player.is_ready ? (
-                      <span className="text-green-400 font-medium">✓ Ready</span>
-                    ) : (
-                      <span className="text-gray-400">Not Ready</span>
-                    )
+                  {player.is_ready ? (
+                    <span className="text-green-400 font-medium">✓ Ready</span>
                   ) : (
-                    <span className="text-yellow-400 text-sm">Unclaimed</span>
+                    <span className="text-gray-400">Not Ready</span>
                   )}
                 </div>
               </div>

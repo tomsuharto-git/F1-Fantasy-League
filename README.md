@@ -1,11 +1,4 @@
-# F1 Fantasy League
-
-**Multiplayer F1 fantasy league with snake draft, live race scoring, and season standings**
-
-🔗 **GitHub:** https://github.com/tomsuharto-git/F1-Fantasy-League
-📍 **Status:** ~85% complete - ready for testing and deployment
-
----
+# F1 Fantasy League - Setup Guide
 
 ## 🏎️ What You Have
 
