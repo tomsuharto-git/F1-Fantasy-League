@@ -1,12 +1,20 @@
 // League Management Functions
-import { supabase } from '../supabase';
+import { createClient } from '@/lib/auth/client';
 import type { League, CreateLeagueInput, Player } from '../types';
 
 /**
- * Create a new league
+ * Create a new league (requires authenticated user)
  */
 export async function createLeague(input: CreateLeagueInput): Promise<League> {
-  // Insert league
+  const supabase = createClient();
+
+  // Get authenticated user
+  const { data: { user }, error: userError } = await supabase.auth.getUser();
+  if (userError || !user) {
+    throw new Error('You must be logged in to create a league');
+  }
+
+  // Insert league (created_by will be set automatically via RLS)
   const { data: league, error: leagueError } = await supabase
     .from('leagues')
     .insert({
@@ -23,8 +31,8 @@ export async function createLeague(input: CreateLeagueInput): Promise<League> {
     throw new Error('Failed to create league');
   }
 
-  // Create players for each team
-  const players = await createPlayers(league.id, input.teams, input.draft_order);
+  // Create players for each team, linking first team to authenticated user
+  const players = await createPlayers(league.id, input.teams, input.draft_order, user.id);
 
   return {
     ...league,
@@ -34,14 +42,18 @@ export async function createLeague(input: CreateLeagueInput): Promise<League> {
 
 /**
  * Create players for a league
+ * First player is automatically assigned to the authenticated user (league creator)
  */
 async function createPlayers(
   leagueId: string,
   teams: Array<{ name: string; color: string }>,
-  draftOrder: 'random' | 'manual'
+  draftOrder: 'random' | 'manual',
+  creatorUserId: string
 ): Promise<Player[]> {
+  const supabase = createClient();
+
   // Determine draft positions
-  const positions = draftOrder === 'random' 
+  const positions = draftOrder === 'random'
     ? shuffleArray([...Array(teams.length)].map((_, i) => i + 1))
     : teams.map((_, i) => i + 1);
 
@@ -50,8 +62,9 @@ async function createPlayers(
     display_name: team.name,
     color: team.color,
     draft_position: positions[index],
-    user_id: null,
-    is_verified: false,
+    // First player is the league creator, others are null (will join via share code)
+    user_id: index === 0 ? creatorUserId : null,
+    is_verified: index === 0, // Creator is automatically verified
     is_ready: false
   }));
 
@@ -71,6 +84,8 @@ async function createPlayers(
  * Get league by ID
  */
 export async function getLeague(leagueId: string): Promise<League | null> {
+  const supabase = createClient();
+
   const { data, error } = await supabase
     .from('leagues')
     .select(`
@@ -89,6 +104,8 @@ export async function getLeague(leagueId: string): Promise<League | null> {
  * Get league by share code
  */
 export async function getLeagueByShareCode(shareCode: string): Promise<League | null> {
+  const supabase = createClient();
+
   const { data, error } = await supabase
     .from('leagues')
     .select(`
@@ -109,6 +126,8 @@ export async function updateLeagueStatus(
   leagueId: string,
   status: 'setup' | 'active' | 'complete'
 ): Promise<void> {
+  const supabase = createClient();
+
   const { error } = await supabase
     .from('leagues')
     .update({ status })
@@ -121,6 +140,8 @@ export async function updateLeagueStatus(
  * Get all leagues for a user
  */
 export async function getUserLeagues(userId: string): Promise<League[]> {
+  const supabase = createClient();
+
   const { data, error } = await supabase
     .from('players')
     .select(`
@@ -140,6 +161,8 @@ export async function updatePlayerReady(
   playerId: string,
   isReady: boolean
 ): Promise<void> {
+  const supabase = createClient();
+
   const { error } = await supabase
     .from('players')
     .update({ is_ready: isReady })
@@ -152,6 +175,8 @@ export async function updatePlayerReady(
  * Check if all players are ready
  */
 export async function areAllPlayersReady(leagueId: string): Promise<boolean> {
+  const supabase = createClient();
+
   const { data, error } = await supabase
     .from('players')
     .select('is_ready')
