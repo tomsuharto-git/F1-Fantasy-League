@@ -14,7 +14,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className="bg-gray-900 text-white min-h-screen">
+      <body className="bg-[#1A1A1A] text-white min-h-screen">
         {children}
         <NotificationSystem />
       </body>
