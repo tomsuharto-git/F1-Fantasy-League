@@ -16,6 +16,10 @@
 # Misc
 .DS_Store
 *.pem
+*.p8
+
+# Apple OAuth secrets
+scripts/apple-oauth-secret.txt
 
 # Debug
 npm-debug.log*

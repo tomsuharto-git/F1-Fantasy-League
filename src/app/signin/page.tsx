@@ -169,6 +169,7 @@ export default function SignInPage() {
               Continue with Google
             </button>
 
+            {/* Apple Sign In - Disabled (requires Apple Developer Program $99/year)
             <button
               onClick={handleAppleSignIn}
               disabled={loading}
@@ -179,6 +180,7 @@ export default function SignInPage() {
               </svg>
               Continue with Apple
             </button>
+            */}
           </div>
 
           {/* Divider */}
