@@ -64,8 +64,8 @@ export default function DashboardPage() {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
-          <p className="text-gray-400">Loading...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#D2B83E] mx-auto mb-4"></div>
+          <p className="text-gray-400">Loading your dashboard...</p>
         </div>
       </div>
     );
@@ -82,12 +82,12 @@ export default function DashboardPage() {
                      'User';
 
   return (
-    <div className="min-h-screen p-4">
+    <div className="min-h-screen p-6 md:p-8">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
-        <div className="flex justify-between items-center mb-8">
+        <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-12 gap-4">
           <div>
-            <h1 className="text-3xl font-bold mb-2">
+            <h1 className="text-4xl font-bold mb-2 bg-gradient-to-r from-[#D2B83E] to-[#B42518] bg-clip-text text-transparent">
               Welcome, {displayName}! 👋
             </h1>
             <p className="text-gray-400">{user.email}</p>
@@ -95,21 +95,21 @@ export default function DashboardPage() {
 
           <button
             onClick={handleSignOut}
-            className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors"
+            className="px-6 py-3 bg-[#2a2a2a] hover:bg-[#333333] text-white rounded-lg transition-all font-medium border border-gray-700"
           >
             Sign Out
           </button>
         </div>
 
         {/* Action Buttons */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
           <button
             onClick={() => router.push('/create')}
-            className="p-6 bg-blue-600 hover:bg-blue-700 rounded-lg text-left transition-colors"
+            className="group p-8 bg-gradient-to-r from-[#D2B83E] to-[#B42518] hover:from-[#E5C94F] hover:to-[#C53829] rounded-lg text-left transition-all transform hover:scale-105 shadow-lg"
           >
-            <div className="text-2xl mb-2">➕</div>
-            <h3 className="text-xl font-bold mb-1">Create New League</h3>
-            <p className="text-blue-200 text-sm">
+            <div className="text-4xl mb-3">➕</div>
+            <h3 className="text-2xl font-bold mb-2 text-white">Create New League</h3>
+            <p className="text-white/90 text-sm">
               Start a new fantasy league with friends
             </p>
           </button>
@@ -121,32 +121,32 @@ export default function DashboardPage() {
                 router.push(`/join/${code.toUpperCase()}`);
               }
             }}
-            className="p-6 bg-green-600 hover:bg-green-700 rounded-lg text-left transition-colors"
+            className="group p-8 bg-gradient-to-r from-[#D2B83E] to-[#B42518] hover:from-[#E5C94F] hover:to-[#C53829] rounded-lg text-left transition-all transform hover:scale-105 shadow-lg"
           >
-            <div className="text-2xl mb-2">🤝</div>
-            <h3 className="text-xl font-bold mb-1">Join League</h3>
-            <p className="text-green-200 text-sm">
+            <div className="text-4xl mb-3">🤝</div>
+            <h3 className="text-2xl font-bold mb-2 text-white">Join League</h3>
+            <p className="text-white/90 text-sm">
               Join an existing league with a share code
             </p>
           </button>
         </div>
 
         {/* User's Leagues */}
-        <div className="bg-gray-800 rounded-lg p-6">
-          <h2 className="text-2xl font-bold mb-4">
+        <div className="mb-8">
+          <h2 className="text-3xl font-bold mb-6">
             Your Leagues ({leagues.length})
           </h2>
 
           {leagues.length === 0 ? (
-            <div className="text-center py-12">
-              <div className="flex justify-center mb-4">
+            <div className="text-center py-16">
+              <div className="flex justify-center mb-6">
                 <img
-                  src="/grid-kings-logo.png"
+                  src="/grid-kings-logo-transparent.png"
                   alt="Grid Kings Logo"
-                  className="h-32 w-auto opacity-50"
+                  className="h-32 w-auto opacity-30"
                 />
               </div>
-              <p className="text-gray-400 mb-4">
+              <p className="text-gray-300 text-lg mb-2">
                 You haven't joined any leagues yet
               </p>
               <p className="text-sm text-gray-500">
@@ -154,7 +154,7 @@ export default function DashboardPage() {
               </p>
             </div>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-4">
               {leagues.map((league) => (
                 <div
                   key={league.league_id}
@@ -167,13 +167,13 @@ export default function DashboardPage() {
                       router.push(`/league/${league.league_id}/standings`);
                     }
                   }}
-                  className="flex items-center justify-between p-4 bg-gray-700 hover:bg-gray-600 rounded-lg cursor-pointer transition-colors"
+                  className="group flex items-center justify-between p-6 bg-[#252525] hover:bg-[#2a2a2a] rounded-lg cursor-pointer transition-all border border-gray-800 hover:border-gray-700"
                 >
                   <div className="flex items-center gap-4">
                     {/* Color indicator (if player has one) */}
                     {league.player_color && (
                       <div
-                        className="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold"
+                        className="w-14 h-14 rounded-full flex items-center justify-center text-white font-bold text-xl shadow-lg"
                         style={{ backgroundColor: league.player_color }}
                       >
                         {league.player_name?.[0]?.toUpperCase() || '?'}
@@ -181,7 +181,9 @@ export default function DashboardPage() {
                     )}
 
                     <div>
-                      <h3 className="font-bold text-lg">{league.league_name}</h3>
+                      <h3 className="font-bold text-xl mb-1 group-hover:text-[#D2B83E] transition-colors">
+                        {league.league_name}
+                      </h3>
                       <div className="flex items-center gap-2 text-sm text-gray-400">
                         {league.player_name && (
                           <span>Team: {league.player_name}</span>
@@ -191,37 +193,39 @@ export default function DashboardPage() {
                         {league.role === 'creator' && (
                           <>
                             <span>•</span>
-                            <span className="text-blue-400">Creator</span>
+                            <span className="text-[#D2B83E]">Creator</span>
                           </>
                         )}
                       </div>
                     </div>
                   </div>
 
-                  <div className="text-gray-400">→</div>
+                  <div className="text-gray-500 group-hover:text-[#D2B83E] transition-colors">→</div>
                 </div>
               ))}
             </div>
           )}
         </div>
 
-        {/* Quick Stats (Future enhancement) */}
+        {/* Quick Stats */}
         {leagues.length > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-8">
-            <div className="bg-gray-800 rounded-lg p-4">
-              <div className="text-2xl font-bold text-blue-400">{leagues.length}</div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="p-6 bg-[#252525] rounded-lg border border-gray-800">
+              <div className="text-4xl font-bold bg-gradient-to-r from-[#D2B83E] to-[#B42518] bg-clip-text text-transparent mb-2">
+                {leagues.length}
+              </div>
               <div className="text-sm text-gray-400">Total Leagues</div>
             </div>
 
-            <div className="bg-gray-800 rounded-lg p-4">
-              <div className="text-2xl font-bold text-green-400">
+            <div className="p-6 bg-[#252525] rounded-lg border border-gray-800">
+              <div className="text-4xl font-bold bg-gradient-to-r from-[#D2B83E] to-[#B42518] bg-clip-text text-transparent mb-2">
                 {leagues.filter(l => l.role === 'creator').length}
               </div>
               <div className="text-sm text-gray-400">Created by You</div>
             </div>
 
-            <div className="bg-gray-800 rounded-lg p-4">
-              <div className="text-2xl font-bold text-orange-400">
+            <div className="p-6 bg-[#252525] rounded-lg border border-gray-800">
+              <div className="text-4xl font-bold bg-gradient-to-r from-[#D2B83E] to-[#B42518] bg-clip-text text-transparent mb-2">
                 {leagues.filter(l => l.role === 'member').length}
               </div>
               <div className="text-sm text-gray-400">Joined</div>
