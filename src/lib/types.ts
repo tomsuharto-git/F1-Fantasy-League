@@ -29,7 +29,7 @@ export interface CreateLeagueInput {
   type: LeagueType;
   max_races: number;
   drivers_per_team: number;
-  teams: Array<{ name: string; color: string }>;
+  creator_team: { name: string; color: string };
   draft_order: 'random' | 'manual';
 }
 

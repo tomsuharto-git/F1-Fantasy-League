@@ -30,55 +30,43 @@ export async function createLeague(input: CreateLeagueInput): Promise<League> {
     throw new Error('Failed to create league');
   }
 
-  // Create players for each team
-  const players = await createPlayers(league.id, input.teams, input.draft_order, user.id);
+  // Create creator's player
+  const creatorPlayer = await createCreatorPlayer(league.id, input.creator_team, user.id);
 
   return {
     ...league,
-    players
+    players: [creatorPlayer]
   };
 }
 
 /**
- * Create players for a league
- * The first player (draft position 1) is automatically assigned to the creator
+ * Create the creator's player for a new league
+ * Draft positions will be assigned later when the draft starts
  */
-async function createPlayers(
+async function createCreatorPlayer(
   leagueId: string,
-  teams: Array<{ name: string; color: string }>,
-  draftOrder: 'random' | 'manual',
+  team: { name: string; color: string },
   creatorUserId: string
-): Promise<Player[]> {
-  // Determine draft positions
-  const positions = draftOrder === 'random'
-    ? shuffleArray([...Array(teams.length)].map((_, i) => i + 1))
-    : teams.map((_, i) => i + 1);
-
-  const playersToInsert = teams.map((team, index) => {
-    const draftPosition = positions[index];
-    const isCreator = draftPosition === 1;
-
-    return {
+): Promise<Player> {
+  const { data: player, error } = await supabase
+    .from('players')
+    .insert({
       league_id: leagueId,
       display_name: team.name,
       color: team.color,
-      draft_position: draftPosition,
-      user_id: isCreator ? creatorUserId : null,
-      is_verified: isCreator,
+      draft_position: null, // Will be assigned when draft starts
+      user_id: creatorUserId,
+      is_verified: true,
       is_ready: false
-    };
-  });
+    })
+    .select()
+    .single();
 
-  const { data: players, error } = await supabase
-    .from('players')
-    .insert(playersToInsert)
-    .select();
-
-  if (error || !players) {
-    throw new Error('Failed to create players');
+  if (error || !player) {
+    throw new Error('Failed to create creator player');
   }
 
-  return players;
+  return player;
 }
 
 /**

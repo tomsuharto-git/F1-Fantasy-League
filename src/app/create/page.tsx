@@ -6,7 +6,7 @@ import { createLeague } from '@/lib/league/operations';
 import { ColorPicker } from '@/components/shared/ColorPicker';
 import { showNotification } from '@/components/shared/NotificationSystem';
 import type { CreateLeagueInput } from '@/lib/types';
-import { ArrowLeft, Plus, Trash2, Check } from 'lucide-react';
+import { ArrowLeft, Check } from 'lucide-react';
 
 type Step = 'basic' | 'teams' | 'draft-order';
 
@@ -20,10 +20,7 @@ export default function CreateLeaguePage() {
     type: 'season_league',
     max_races: 1,
     drivers_per_team: 4,
-    teams: [
-      { name: '', color: '' },
-      { name: '', color: '' }
-    ],
+    creator_team: { name: '', color: '' },
     draft_order: 'random'
   });
 
@@ -31,42 +28,17 @@ export default function CreateLeaguePage() {
     setFormData(prev => ({ ...prev, ...updates }));
   };
 
-  const addTeam = () => {
-    if (formData.teams.length >= 10) {
-      showNotification('Maximum 10 teams allowed', 'warning');
-      return;
-    }
-    const newTeams = [...formData.teams, { name: '', color: '' }];
-    const driversPerTeam = newTeams.length <= 5 ? 4 : 2;
-    updateFormData({
-      teams: newTeams,
-      drivers_per_team: driversPerTeam
-    });
-  };
-
-  const removeTeam = (index: number) => {
-    if (formData.teams.length <= 2) {
-      showNotification('Minimum 2 teams required', 'warning');
-      return;
-    }
-    const newTeams = formData.teams.filter((_, i) => i !== index);
-    const driversPerTeam = newTeams.length <= 5 ? 4 : 2;
-    updateFormData({
-      teams: newTeams,
-      drivers_per_team: driversPerTeam
-    });
-  };
-
-  const updateTeam = (index: number, updates: Partial<{ name: string; color: string }>) => {
-    const newTeams = [...formData.teams];
-    newTeams[index] = { ...newTeams[index], ...updates };
-    updateFormData({ teams: newTeams });
+  const updateCreatorTeam = (updates: Partial<{ name: string; color: string }>) => {
+    setFormData(prev => ({
+      ...prev,
+      creator_team: { ...prev.creator_team, ...updates }
+    }));
   };
 
   const canProceedFromBasic = formData.name.trim().length > 0;
-  const canProceedFromTeams = formData.teams.every(team =>
-    team.name.trim().length > 0 && team.color.length > 0
-  );
+  const canProceedFromTeams =
+    formData.creator_team.name.trim().length > 0 &&
+    formData.creator_team.color.length > 0;
 
   const handleCreate = async () => {
     try {
@@ -82,8 +54,6 @@ export default function CreateLeaguePage() {
       setLoading(false);
     }
   };
-
-  const usedColors = formData.teams.map(t => t.color);
 
   return (
     <div className="min-h-screen">
@@ -130,7 +100,7 @@ export default function CreateLeaguePage() {
                 ? 'bg-gradient-to-r from-[#D2B83E] to-[#B42518] text-white'
                 : 'bg-[#2a2a2a] border border-gray-700'
             }`}>2</div>
-            <span className="ml-2 font-medium">Teams</span>
+            <span className="ml-2 font-medium">Your Team</span>
           </div>
 
           <div className="w-16 h-px bg-gray-700 mx-4" />
@@ -177,64 +147,41 @@ export default function CreateLeaguePage() {
           </div>
         )}
 
-        {/* Step 2: Teams */}
+        {/* Step 2: Your Team */}
         {currentStep === 'teams' && (
           <div className="bg-[#252525] rounded-lg p-8 border border-gray-800">
             <div className="space-y-6">
-              <div className="flex justify-between items-center">
-                <div>
-                  <h2 className="text-xl font-bold">Team Setup</h2>
-                  <p className="text-sm text-gray-400 mt-1">
-                    {formData.teams.length} teams × {formData.drivers_per_team} drivers = {formData.teams.length * formData.drivers_per_team} total picks
-                  </p>
-                </div>
-                <button
-                  onClick={addTeam}
-                  className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[#D2B83E] to-[#B42518] hover:from-[#E5C94F] hover:to-[#C53829] text-white rounded-lg transition-all font-medium shadow-md"
-                >
-                  <Plus className="w-4 h-4" />
-                  Add Team
-                </button>
+              <div>
+                <h2 className="text-xl font-bold">Your Team</h2>
+                <p className="text-sm text-gray-400 mt-1">
+                  Choose your team name and color. Friends will choose theirs when they join.
+                </p>
               </div>
 
-              {formData.teams.map((team, index) => (
-                <div key={index} className="p-6 bg-[#1e1e1e] rounded-lg border border-gray-800">
-                  <div className="flex justify-between items-center mb-4">
-                    <h3 className="font-medium text-gray-300">Team {index + 1}</h3>
-                    {formData.teams.length > 2 && (
-                      <button
-                        onClick={() => removeTeam(index)}
-                        className="flex items-center gap-1 text-red-400 hover:text-red-300 text-sm"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                        Remove
-                      </button>
-                    )}
+              <div className="p-6 bg-[#1e1e1e] rounded-lg border border-gray-800">
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm mb-2 text-gray-400">Team Name</label>
+                    <input
+                      type="text"
+                      value={formData.creator_team.name}
+                      onChange={(e) => updateCreatorTeam({ name: e.target.value })}
+                      placeholder="Enter your team name"
+                      className="w-full px-4 py-3 bg-[#252525] border border-gray-700 rounded-lg focus:outline-none focus:border-[#D2B83E] transition-colors text-white"
+                      autoFocus
+                    />
                   </div>
 
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm mb-2 text-gray-400">Team Name</label>
-                      <input
-                        type="text"
-                        value={team.name}
-                        onChange={(e) => updateTeam(index, { name: e.target.value })}
-                        placeholder={`Player ${index + 1}`}
-                        className="w-full px-4 py-2 bg-[#252525] border border-gray-700 rounded-lg focus:outline-none focus:border-[#D2B83E] transition-colors text-white"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm mb-2 text-gray-400">Team Color</label>
-                      <ColorPicker
-                        value={team.color}
-                        onChange={(color) => updateTeam(index, { color })}
-                        usedColors={usedColors.filter((_, i) => i !== index)}
-                      />
-                    </div>
+                  <div>
+                    <label className="block text-sm mb-2 text-gray-400">Team Color</label>
+                    <ColorPicker
+                      value={formData.creator_team.color}
+                      onChange={(color) => updateCreatorTeam({ color })}
+                      usedColors={[]}
+                    />
                   </div>
                 </div>
-              ))}
+              </div>
 
               <div className="flex gap-3 pt-4">
                 <button
@@ -305,7 +252,7 @@ export default function CreateLeaguePage() {
                       {formData.draft_order === 'manual' && <Check className="w-4 h-4 text-[#D2B83E]" />}
                     </div>
                     <div className="text-sm text-gray-400 mt-1">
-                      Draft order: {formData.teams.map((t, i) => t.name || `Team ${i+1}`).join(' → ')}
+                      Teams will draft in the order they joined the league
                     </div>
                   </div>
                 </label>
@@ -316,19 +263,19 @@ export default function CreateLeaguePage() {
                 <ol className="text-sm text-gray-300 space-y-2">
                   <li className="flex items-start gap-2">
                     <span className="text-[#D2B83E] font-bold">1.</span>
-                    <span>You'll get a share link to send to players</span>
+                    <span>You'll get a share code to send to friends</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="text-[#D2B83E] font-bold">2.</span>
-                    <span>Everyone joins the waiting room</span>
+                    <span>Friends join and choose their team name & color</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="text-[#D2B83E] font-bold">3.</span>
-                    <span>When all ready, start the snake draft</span>
+                    <span>Everyone meets in the waiting room</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="text-[#D2B83E] font-bold">4.</span>
-                    <span>Score points during the race!</span>
+                    <span>When ready, start the snake draft!</span>
                   </li>
                 </ol>
               </div>
