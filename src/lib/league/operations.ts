@@ -107,7 +107,17 @@ export async function getLeagueByShareCode(shareCode: string): Promise<League | 
     .eq('share_code', shareCode)
     .single();
 
-  if (error) return null;
+  if (error) {
+    console.error('Error fetching league by share code:', {
+      shareCode,
+      error: error.message,
+      details: error.details,
+      hint: error.hint,
+      code: error.code
+    });
+    return null;
+  }
+
   return data;
 }
 
