@@ -51,6 +51,7 @@ async function createCreatorPlayer(
   team: { name: string; color: string },
   creatorUserId: string
 ): Promise<Player> {
+  const supabase = createClient();
   const { data: player, error } = await supabase
     .from('players')
     .insert({
