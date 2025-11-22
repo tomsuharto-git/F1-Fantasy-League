@@ -41,12 +41,16 @@ export default function DashboardPage() {
         // Get user's leagues
         const { data, error } = await supabase.rpc('get_user_leagues');
 
-        if (error) throw error;
+        if (error) {
+          console.error('RPC Error:', error);
+          throw error;
+        }
 
         setLeagues(data || []);
       } catch (error) {
         console.error('Error loading dashboard:', error);
-        showNotification('Failed to load dashboard', 'error');
+        const errorMessage = error instanceof Error ? error.message : JSON.stringify(error);
+        showNotification(`Failed to load dashboard: ${errorMessage}`, 'error');
       } finally {
         setLoading(false);
       }
