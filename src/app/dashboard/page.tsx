@@ -6,6 +6,7 @@ import { createClient } from '@/lib/auth/client';
 import type { User } from '@supabase/supabase-js';
 import { showNotification } from '@/components/shared/NotificationSystem';
 import { JoinLeagueModal } from '@/components/dashboard/JoinLeagueModal';
+import { Plus, UserPlus } from 'lucide-react';
 
 interface UserLeague {
   league_id: string;
@@ -204,14 +205,14 @@ export default function DashboardPage() {
               onClick={() => router.push('/create')}
               className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-[#D2B83E] to-[#C3693B] hover:from-[#E5C94F] hover:to-[#D47A4C] text-white rounded-lg transition-all font-medium shadow-md"
             >
-              <span className="text-xl">➕</span>
+              <Plus className="w-5 h-5" />
               Create League
             </button>
             <button
               onClick={() => setShowJoinModal(true)}
               className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-[#C3693B] to-[#B42518] hover:from-[#D47A4C] hover:to-[#C53829] text-white rounded-lg transition-all font-medium shadow-md"
             >
-              <span className="text-xl">🤝</span>
+              <UserPlus className="w-5 h-5" />
               Join League
             </button>
           </div>
@@ -222,7 +223,7 @@ export default function DashboardPage() {
               onClick={() => router.push('/create')}
               className="group p-8 bg-gradient-to-r from-[#D2B83E] to-[#C3693B] hover:from-[#E5C94F] hover:to-[#D47A4C] rounded-lg text-left transition-all transform hover:scale-105 shadow-lg"
             >
-              <div className="text-4xl mb-3">➕</div>
+              <Plus className="w-12 h-12 mb-3 text-[#1a1a1a]" />
               <h3 className="text-2xl font-bold mb-2 text-white">Create New League</h3>
               <p className="text-white/90 text-sm">
                 Start a new fantasy league with friends
@@ -233,7 +234,7 @@ export default function DashboardPage() {
               onClick={() => setShowJoinModal(true)}
               className="group p-8 bg-gradient-to-r from-[#C3693B] to-[#B42518] hover:from-[#D47A4C] hover:to-[#C53829] rounded-lg text-left transition-all transform hover:scale-105 shadow-lg"
             >
-              <div className="text-4xl mb-3">🤝</div>
+              <UserPlus className="w-12 h-12 mb-3 text-[#1a1a1a]" />
               <h3 className="text-2xl font-bold mb-2 text-white">Join League</h3>
               <p className="text-white/90 text-sm">
                 Join an existing league with a share code
