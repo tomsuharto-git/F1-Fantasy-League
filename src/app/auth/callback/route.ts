@@ -39,7 +39,16 @@ export async function GET(request: NextRequest) {
     const { error } = await supabase.auth.exchangeCodeForSession(code);
 
     if (!error) {
-      // Successfully authenticated, redirect to dashboard
+      // Check for stored redirect path
+      // Note: We can't access sessionStorage on the server, so we'll use a query param
+      const next = requestUrl.searchParams.get('next');
+
+      if (next) {
+        // Redirect to the stored path
+        return NextResponse.redirect(`${origin}${next}`);
+      }
+
+      // Default: redirect to dashboard
       return NextResponse.redirect(`${origin}/dashboard`);
     }
   }

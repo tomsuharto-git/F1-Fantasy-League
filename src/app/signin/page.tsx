@@ -1,18 +1,20 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/auth/client';
 import { showNotification } from '@/components/shared/NotificationSystem';
 
 export default function SignInPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const supabase = createClient();
 
   const [authMethod, setAuthMethod] = useState<'email' | 'phone'>('email');
   const [isSignUp, setIsSignUp] = useState(false);
   const [loading, setLoading] = useState(false);
   const [otpSent, setOtpSent] = useState(false);
+  const [redirectPath, setRedirectPath] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -20,6 +22,14 @@ export default function SignInPage() {
     phone: '',
     otp: ''
   });
+
+  // Check for redirect path from query params
+  useEffect(() => {
+    const redirectedFrom = searchParams.get('redirectedFrom');
+    if (redirectedFrom) {
+      setRedirectPath(redirectedFrom);
+    }
+  }, [searchParams]);
 
   // Email/Password Sign In
   const handleEmailSignIn = async (e: React.FormEvent) => {
@@ -96,10 +106,16 @@ export default function SignInPage() {
     setLoading(true);
 
     try {
+      // Build callback URL with redirect path if available
+      let callbackUrl = `${window.location.origin}/auth/callback`;
+      if (redirectPath) {
+        callbackUrl += `?next=${encodeURIComponent(redirectPath)}`;
+      }
+
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
+          redirectTo: callbackUrl,
         },
       });
 
