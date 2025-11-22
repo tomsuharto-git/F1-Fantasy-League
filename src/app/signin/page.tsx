@@ -194,14 +194,14 @@ export default function SignInPage() {
         <div className="text-center mb-8">
           <div className="flex justify-center">
             <img
-              src="/grid-kings-logo.png"
+              src="/grid-kings-logo-transparent.png"
               alt="Grid Kings Logo"
               className="h-32 w-auto"
             />
           </div>
         </div>
 
-        <div className="bg-[#1A1A1A] rounded-lg p-6 shadow-xl border border-gray-800">
+        <div className="rounded-lg p-6">
           {/* Social Sign In Buttons */}
           <div className="space-y-3 mb-6">
             <button

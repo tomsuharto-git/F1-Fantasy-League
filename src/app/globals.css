@@ -6,9 +6,10 @@
   * {
     @apply border-gray-700;
   }
-  
+
   body {
-    @apply bg-gray-900 text-white;
+    @apply text-white;
+    background-color: #1e1e1e;
   }
 }
 
