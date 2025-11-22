@@ -23,29 +23,23 @@ export function JoinLeague({ league }: JoinLeagueProps) {
   useEffect(() => {
     async function checkAuth() {
       try {
-        // Get current user
-        const { data: { user }, error: userError } = await supabase.auth.getUser();
+        // Get current user (but don't redirect if not authenticated)
+        const { data: { user } } = await supabase.auth.getUser();
 
-        if (userError || !user) {
-          // Store current path for redirect after signin
-          const currentPath = window.location.pathname;
-          sessionStorage.setItem('redirectAfterSignin', currentPath);
-          router.push('/signin');
-          return;
+        if (user) {
+          setCurrentUser(user);
+
+          // Check if user already has a player in this league
+          const existingPlayer = league.players?.find(p => p.user_id === user.id);
+          if (existingPlayer) {
+            showNotification('You already joined this league', 'info');
+            router.push(`/league/${league.id}/waiting-room`);
+            return;
+          }
         }
-
-        setCurrentUser(user);
-
-        // Check if user already has a player in this league
-        const existingPlayer = league.players?.find(p => p.user_id === user.id);
-        if (existingPlayer) {
-          showNotification('You already joined this league', 'info');
-          router.push(`/league/${league.id}/waiting-room`);
-          return;
-        }
+        // If no user, just show the join form - auth will be required when they click Join
       } catch (error) {
         console.error('Failed to check auth:', error);
-        showNotification('Failed to load', 'error');
       } finally {
         setLoading(false);
       }
@@ -55,7 +49,15 @@ export function JoinLeague({ league }: JoinLeagueProps) {
   }, [league.id, league.players, router, supabase]);
 
   const handleJoin = async () => {
-    if (!teamName.trim() || !teamColor || !currentUser) return;
+    // If not authenticated, redirect to signin with current path stored
+    if (!currentUser) {
+      const currentPath = window.location.pathname;
+      sessionStorage.setItem('redirectAfterSignin', currentPath);
+      router.push('/signin');
+      return;
+    }
+
+    if (!teamName.trim() || !teamColor) return;
 
     try {
       setJoiningLoading(true);
@@ -106,7 +108,9 @@ export function JoinLeague({ league }: JoinLeagueProps) {
   }
 
   const usedColors = league.players?.map(p => p.color) || [];
-  const canJoin = teamName.trim().length > 0 && teamColor.length > 0;
+  // For unauthenticated users, always enable the button (will redirect to signin)
+  // For authenticated users, require team name and color
+  const canJoin = !currentUser || (teamName.trim().length > 0 && teamColor.length > 0);
 
   return (
     <div className="max-w-2xl mx-auto p-6">
@@ -149,7 +153,12 @@ export function JoinLeague({ league }: JoinLeagueProps) {
                 : 'bg-[#2a2a2a] text-gray-500 cursor-not-allowed'
             }`}
           >
-            {joiningLoading ? 'Joining...' : 'Join League'}
+            {joiningLoading
+              ? 'Joining...'
+              : !currentUser
+                ? 'Sign in to Join League'
+                : 'Join League'
+            }
           </button>
         </div>
       </div>
