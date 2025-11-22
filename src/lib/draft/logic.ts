@@ -1,5 +1,5 @@
 // Draft Logic & Snake Draft Algorithm
-import { supabase } from '../supabase';
+import { createClient } from '@/lib/auth/client';
 import type { Player, DraftPick, Driver } from '../types';
 
 /**
@@ -75,6 +75,8 @@ export async function makeDraftPick(
   driver: Driver,
   pickNumber: number
 ): Promise<DraftPick> {
+  const supabase = createClient();
+
   // Validate driver not already picked
   const { data: existingPick } = await supabase
     .from('draft_picks')
@@ -114,6 +116,8 @@ export async function makeDraftPick(
  * Undo last draft pick
  */
 export async function undoLastPick(raceId: string): Promise<DraftPick | null> {
+  const supabase = createClient();
+
   // Get last pick
   const { data: picks, error: fetchError } = await supabase
     .from('draft_picks')
@@ -145,6 +149,7 @@ export async function undoLastPick(raceId: string): Promise<DraftPick | null> {
  * Get all draft picks for a race
  */
 export async function getDraftPicks(raceId: string): Promise<DraftPick[]> {
+  const supabase = createClient();
   const { data, error } = await supabase
     .from('draft_picks')
     .select('*')
@@ -162,6 +167,7 @@ export async function getPlayerPicks(
   raceId: string,
   playerId: string
 ): Promise<DraftPick[]> {
+  const supabase = createClient();
   const { data, error } = await supabase
     .from('draft_picks')
     .select('*')
@@ -180,6 +186,7 @@ export async function isDriverAvailable(
   raceId: string,
   driverCode: string
 ): Promise<boolean> {
+  const supabase = createClient();
   const { data } = await supabase
     .from('draft_picks')
     .select('id')
@@ -205,9 +212,10 @@ export function getAvailableDrivers(
  * Mark draft as complete
  */
 export async function completeDraft(raceId: string): Promise<void> {
+  const supabase = createClient();
   const { error } = await supabase
     .from('races')
-    .update({ 
+    .update({
       draft_complete: true,
       status: 'live'
     })

@@ -185,3 +185,79 @@ function shuffleArray<T>(array: T[]): T[] {
   }
   return shuffled;
 }
+
+/**
+ * Start draft - assign draft positions and create race
+ */
+export async function startDraft(
+  leagueId: string,
+  draftOrder: 'random' | 'manual',
+  manualOrder?: string[] // Array of player IDs in desired order
+): Promise<string> {
+  const supabase = createClient();
+
+  // Get league with players
+  const { data: league, error: leagueError } = await supabase
+    .from('leagues')
+    .select('*, players(*)')
+    .eq('id', leagueId)
+    .single();
+
+  if (leagueError || !league) {
+    throw new Error('League not found');
+  }
+
+  // Determine draft order
+  let orderedPlayerIds: string[];
+
+  if (draftOrder === 'random') {
+    // Random shuffle
+    orderedPlayerIds = shuffleArray(league.players.map(p => p.id));
+  } else {
+    // Use manual order
+    if (!manualOrder || manualOrder.length !== league.players.length) {
+      throw new Error('Invalid manual order');
+    }
+    orderedPlayerIds = manualOrder;
+  }
+
+  // Assign draft positions to players
+  const updates = orderedPlayerIds.map((playerId, index) => ({
+    id: playerId,
+    draft_position: index + 1
+  }));
+
+  for (const update of updates) {
+    const { error } = await supabase
+      .from('players')
+      .update({ draft_position: update.draft_position })
+      .eq('id', update.id);
+
+    if (error) {
+      throw new Error('Failed to assign draft positions');
+    }
+  }
+
+  // Create race for this draft
+  const { data: race, error: raceError } = await supabase
+    .from('races')
+    .insert({
+      league_id: leagueId,
+      race_number: 1,
+      race_name: 'Draft Race',
+      status: 'drafting',
+      draft_complete: false,
+      results_finalized: false
+    })
+    .select()
+    .single();
+
+  if (raceError || !race) {
+    throw new Error('Failed to create race');
+  }
+
+  // Update league status to active
+  await updateLeagueStatus(leagueId, 'active');
+
+  return race.id;
+}

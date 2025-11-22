@@ -6,6 +6,7 @@ import { createClient } from '@/lib/auth/client';
 import { useLeague } from '@/hooks/useLeague';
 import { usePlayerReadyRealtime } from '@/hooks/useRealtime';
 import { showNotification } from '@/components/shared/NotificationSystem';
+import { startDraft } from '@/lib/league/operations';
 import { ArrowLeft, Share2, Info, Shuffle, Users, Flag, Clock } from 'lucide-react';
 
 interface WaitingRoomProps {
@@ -138,10 +139,22 @@ export default function WaitingRoomPage({ params }: WaitingRoomProps) {
   const isCreator = league?.created_by === currentUserId;
 
   // Start draft
-  const handleStartDraft = () => {
-    // TODO: Save draft order and create race
-    showNotification('Draft starting...', 'success');
-    // router.push(`/draft/${raceId}`);
+  const handleStartDraft = async () => {
+    try {
+      showNotification('Starting draft...', 'info');
+
+      const raceId = await startDraft(
+        params.id,
+        draftOrder,
+        draftOrder === 'manual' ? manualOrder : undefined
+      );
+
+      showNotification('Draft started!', 'success');
+      router.push(`/draft/${raceId}`);
+    } catch (error) {
+      console.error('Failed to start draft:', error);
+      showNotification('Failed to start draft. Please try again.', 'error');
+    }
   };
 
   if (authLoading || loading) {
