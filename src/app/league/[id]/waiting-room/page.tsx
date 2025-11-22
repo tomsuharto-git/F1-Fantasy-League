@@ -62,9 +62,29 @@ export default function WaitingRoomPage({ params }: WaitingRoomProps) {
     refresh();
   });
 
-  // Copy share link
-  const copyShareLink = () => {
+  // Share or copy link
+  const handleShare = async () => {
     const shareUrl = `${window.location.origin}/join/${league?.share_code}`;
+
+    // Try native share first (mobile + some desktop browsers)
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: `Join ${league?.name}`,
+          text: `Join my F1 fantasy league: ${league?.name}`,
+          url: shareUrl
+        });
+        showNotification('Share successful!', 'success');
+        return;
+      } catch (error) {
+        // User cancelled or share failed, fall back to copy
+        if ((error as Error).name !== 'AbortError') {
+          console.error('Share failed:', error);
+        }
+      }
+    }
+
+    // Fallback to clipboard copy
     navigator.clipboard.writeText(shareUrl);
     setCopied(true);
     showNotification('Share link copied!', 'success');
@@ -205,14 +225,14 @@ export default function WaitingRoomPage({ params }: WaitingRoomProps) {
               className="flex-1 px-3 py-2 bg-[#1e1e1e] border border-gray-700 rounded focus:outline-none text-white"
             />
             <button
-              onClick={copyShareLink}
+              onClick={handleShare}
               className={`px-4 py-2 rounded font-medium transition-colors ${
                 copied
                   ? 'bg-green-600 hover:bg-green-700'
                   : 'bg-gradient-to-r from-[#D2B83E] to-[#B42518] hover:from-[#E5C94F] hover:to-[#C53829]'
               }`}
             >
-              {copied ? 'Copied!' : 'Copy Link'}
+              {copied ? 'Copied!' : 'Share'}
             </button>
           </div>
 
