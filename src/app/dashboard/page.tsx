@@ -139,74 +139,10 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* Quick Actions - Compact when user has leagues */}
-        {hasLeagues ? (
-          <div className="flex gap-3 mb-8">
-            <button
-              onClick={() => router.push('/create')}
-              className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-[#D2B83E] to-[#C3693B] hover:from-[#E5C94F] hover:to-[#D47A4C] text-white rounded-lg transition-all font-medium shadow-md"
-            >
-              <span className="text-xl">➕</span>
-              Create League
-            </button>
-            <button
-              onClick={() => setShowJoinModal(true)}
-              className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-[#C3693B] to-[#B42518] hover:from-[#D47A4C] hover:to-[#C53829] text-white rounded-lg transition-all font-medium shadow-md"
-            >
-              <span className="text-xl">🤝</span>
-              Join League
-            </button>
-          </div>
-        ) : (
-          // Large action buttons for empty state
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
-            <button
-              onClick={() => router.push('/create')}
-              className="group p-8 bg-gradient-to-r from-[#D2B83E] to-[#C3693B] hover:from-[#E5C94F] hover:to-[#D47A4C] rounded-lg text-left transition-all transform hover:scale-105 shadow-lg"
-            >
-              <div className="text-4xl mb-3">➕</div>
-              <h3 className="text-2xl font-bold mb-2 text-white">Create New League</h3>
-              <p className="text-white/90 text-sm">
-                Start a new fantasy league with friends
-              </p>
-            </button>
-
-            <button
-              onClick={() => setShowJoinModal(true)}
-              className="group p-8 bg-gradient-to-r from-[#C3693B] to-[#B42518] hover:from-[#D47A4C] hover:to-[#C53829] rounded-lg text-left transition-all transform hover:scale-105 shadow-lg"
-            >
-              <div className="text-4xl mb-3">🤝</div>
-              <h3 className="text-2xl font-bold mb-2 text-white">Join League</h3>
-              <p className="text-white/90 text-sm">
-                Join an existing league with a share code
-              </p>
-            </button>
-          </div>
-        )}
-
-        {/* Leagues List */}
-        <div>
-          <h2 className="text-2xl font-bold mb-6">
-            {hasLeagues ? 'Your Leagues' : 'Get Started'}
-          </h2>
-
-          {!hasLeagues ? (
-            <div className="text-center py-16">
-              <div className="flex justify-center mb-6">
-                <img
-                  src="/grid-kings-logo-transparent.png"
-                  alt="Grid Kings Logo"
-                  className="h-32 w-auto opacity-30"
-                />
-              </div>
-              <p className="text-gray-300 text-lg mb-2">
-                You haven't joined any leagues yet
-              </p>
-              <p className="text-sm text-gray-500">
-                Create a league or join one with a share code to get started!
-              </p>
-            </div>
-          ) : (
+        {/* Leagues List - Show first when user has leagues */}
+        {hasLeagues && (
+          <div className="mb-8">
+            <h2 className="text-2xl font-bold mb-6">Your Leagues</h2>
             <div className="space-y-3">
               {leagues.map((league) => (
                 <div
@@ -254,8 +190,53 @@ export default function DashboardPage() {
                 </div>
               ))}
             </div>
-          )}
-        </div>
+          </div>
+        )}
+
+        {/* Quick Actions */}
+        {hasLeagues ? (
+          <div className="flex gap-3">
+            <button
+              onClick={() => router.push('/create')}
+              className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-[#D2B83E] to-[#C3693B] hover:from-[#E5C94F] hover:to-[#D47A4C] text-white rounded-lg transition-all font-medium shadow-md"
+            >
+              <span className="text-xl">➕</span>
+              Create League
+            </button>
+            <button
+              onClick={() => setShowJoinModal(true)}
+              className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-[#C3693B] to-[#B42518] hover:from-[#D47A4C] hover:to-[#C53829] text-white rounded-lg transition-all font-medium shadow-md"
+            >
+              <span className="text-xl">🤝</span>
+              Join League
+            </button>
+          </div>
+        ) : (
+          // Large action buttons for empty state - no empty message
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <button
+              onClick={() => router.push('/create')}
+              className="group p-8 bg-gradient-to-r from-[#D2B83E] to-[#C3693B] hover:from-[#E5C94F] hover:to-[#D47A4C] rounded-lg text-left transition-all transform hover:scale-105 shadow-lg"
+            >
+              <div className="text-4xl mb-3">➕</div>
+              <h3 className="text-2xl font-bold mb-2 text-white">Create New League</h3>
+              <p className="text-white/90 text-sm">
+                Start a new fantasy league with friends
+              </p>
+            </button>
+
+            <button
+              onClick={() => setShowJoinModal(true)}
+              className="group p-8 bg-gradient-to-r from-[#C3693B] to-[#B42518] hover:from-[#D47A4C] hover:to-[#C53829] rounded-lg text-left transition-all transform hover:scale-105 shadow-lg"
+            >
+              <div className="text-4xl mb-3">🤝</div>
+              <h3 className="text-2xl font-bold mb-2 text-white">Join League</h3>
+              <p className="text-white/90 text-sm">
+                Join an existing league with a share code
+              </p>
+            </button>
+          </div>
+        )}
       </main>
 
       {/* Join League Modal */}
