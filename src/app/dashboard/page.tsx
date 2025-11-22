@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/auth/client';
 import type { User } from '@supabase/supabase-js';
 import { showNotification } from '@/components/shared/NotificationSystem';
+import { JoinLeagueModal } from '@/components/dashboard/JoinLeagueModal';
 
 interface UserLeague {
   league_id: string;
@@ -24,11 +25,11 @@ export default function DashboardPage() {
   const [user, setUser] = useState<User | null>(null);
   const [leagues, setLeagues] = useState<UserLeague[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showJoinModal, setShowJoinModal] = useState(false);
 
   useEffect(() => {
     async function loadUser() {
       try {
-        // Get current user
         const { data: { user } } = await supabase.auth.getUser();
 
         if (!user) {
@@ -38,7 +39,6 @@ export default function DashboardPage() {
 
         setUser(user);
 
-        // Get user's leagues
         const { data, error } = await supabase.rpc('get_user_leagues');
 
         if (error) {
@@ -76,67 +76,121 @@ export default function DashboardPage() {
   }
 
   if (!user) {
-    return null; // Redirecting to signin
+    return null;
   }
 
-  // Get display name from metadata or email
-  const displayName = user.user_metadata?.full_name ||
-                     user.user_metadata?.name ||
-                     user.email?.split('@')[0] ||
-                     'User';
+  const hasLeagues = leagues.length > 0;
 
   return (
-    <div className="min-h-screen p-6 md:p-8">
-      <div className="max-w-6xl mx-auto">
-        {/* Header */}
-        <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-12 gap-4">
-          <p className="text-gray-400">{user.email}</p>
+    <div className="min-h-screen">
+      {/* Header */}
+      <header className="border-b border-gray-800 bg-[#1e1e1e]">
+        <div className="max-w-7xl mx-auto px-6 py-4">
+          <div className="flex items-center justify-between">
+            {/* Logo */}
+            <div className="flex items-center gap-4">
+              <img
+                src="/grid-kings-logo-transparent.png"
+                alt="Grid Kings"
+                className="h-10 w-auto"
+              />
+            </div>
 
-          <button
-            onClick={handleSignOut}
-            className="px-6 py-3 bg-[#2a2a2a] hover:bg-[#333333] text-white rounded-lg transition-all font-medium border border-gray-700"
-          >
-            Sign Out
-          </button>
+            {/* User Menu */}
+            <div className="flex items-center gap-4">
+              <span className="text-sm text-gray-400 hidden md:block">
+                {user.email}
+              </span>
+              <button
+                onClick={handleSignOut}
+                className="px-4 py-2 bg-[#2a2a2a] hover:bg-[#333333] text-white text-sm rounded-lg transition-all border border-gray-700"
+              >
+                Sign Out
+              </button>
+            </div>
+          </div>
         </div>
+      </header>
 
-        {/* Action Buttons */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
-          <button
-            onClick={() => router.push('/create')}
-            className="group p-8 bg-gradient-to-r from-[#D2B83E] to-[#C3693B] hover:from-[#E5C94F] hover:to-[#D47A4C] rounded-lg text-left transition-all transform hover:scale-105 shadow-lg"
-          >
-            <div className="text-4xl mb-3">➕</div>
-            <h3 className="text-2xl font-bold mb-2 text-white">Create New League</h3>
-            <p className="text-white/90 text-sm">
-              Start a new fantasy league with friends
-            </p>
-          </button>
+      <main className="max-w-7xl mx-auto px-6 py-8">
+        {/* Stats - Show at top when user has leagues */}
+        {hasLeagues && (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+            <div className="p-4 bg-[#252525] rounded-lg border border-gray-800">
+              <div className="text-3xl font-bold bg-gradient-to-r from-[#D2B83E] to-[#B42518] bg-clip-text text-transparent mb-1">
+                {leagues.length}
+              </div>
+              <div className="text-xs text-gray-400">Total Leagues</div>
+            </div>
 
-          <button
-            onClick={() => {
-              const code = prompt('Enter league code:');
-              if (code) {
-                router.push(`/join/${code.toUpperCase()}`);
-              }
-            }}
-            className="group p-8 bg-gradient-to-r from-[#C3693B] to-[#B42518] hover:from-[#D47A4C] hover:to-[#C53829] rounded-lg text-left transition-all transform hover:scale-105 shadow-lg"
-          >
-            <div className="text-4xl mb-3">🤝</div>
-            <h3 className="text-2xl font-bold mb-2 text-white">Join League</h3>
-            <p className="text-white/90 text-sm">
-              Join an existing league with a share code
-            </p>
-          </button>
-        </div>
+            <div className="p-4 bg-[#252525] rounded-lg border border-gray-800">
+              <div className="text-3xl font-bold bg-gradient-to-r from-[#D2B83E] to-[#B42518] bg-clip-text text-transparent mb-1">
+                {leagues.filter(l => l.role === 'creator').length}
+              </div>
+              <div className="text-xs text-gray-400">Created by You</div>
+            </div>
 
-        {/* User's Leagues */}
-        <div className="mb-8">
-          <h2 className="text-3xl font-bold mb-6">
-            Your Leagues ({leagues.length})
+            <div className="p-4 bg-[#252525] rounded-lg border border-gray-800">
+              <div className="text-3xl font-bold bg-gradient-to-r from-[#D2B83E] to-[#B42518] bg-clip-text text-transparent mb-1">
+                {leagues.filter(l => l.role === 'member').length}
+              </div>
+              <div className="text-xs text-gray-400">Joined</div>
+            </div>
+          </div>
+        )}
+
+        {/* Quick Actions - Compact when user has leagues */}
+        {hasLeagues ? (
+          <div className="flex gap-3 mb-8">
+            <button
+              onClick={() => router.push('/create')}
+              className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-[#D2B83E] to-[#C3693B] hover:from-[#E5C94F] hover:to-[#D47A4C] text-white rounded-lg transition-all font-medium shadow-md"
+            >
+              <span className="text-xl">➕</span>
+              Create League
+            </button>
+            <button
+              onClick={() => setShowJoinModal(true)}
+              className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-[#C3693B] to-[#B42518] hover:from-[#D47A4C] hover:to-[#C53829] text-white rounded-lg transition-all font-medium shadow-md"
+            >
+              <span className="text-xl">🤝</span>
+              Join League
+            </button>
+          </div>
+        ) : (
+          // Large action buttons for empty state
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
+            <button
+              onClick={() => router.push('/create')}
+              className="group p-8 bg-gradient-to-r from-[#D2B83E] to-[#C3693B] hover:from-[#E5C94F] hover:to-[#D47A4C] rounded-lg text-left transition-all transform hover:scale-105 shadow-lg"
+            >
+              <div className="text-4xl mb-3">➕</div>
+              <h3 className="text-2xl font-bold mb-2 text-white">Create New League</h3>
+              <p className="text-white/90 text-sm">
+                Start a new fantasy league with friends
+              </p>
+            </button>
+
+            <button
+              onClick={() => setShowJoinModal(true)}
+              className="group p-8 bg-gradient-to-r from-[#C3693B] to-[#B42518] hover:from-[#D47A4C] hover:to-[#C53829] rounded-lg text-left transition-all transform hover:scale-105 shadow-lg"
+            >
+              <div className="text-4xl mb-3">🤝</div>
+              <h3 className="text-2xl font-bold mb-2 text-white">Join League</h3>
+              <p className="text-white/90 text-sm">
+                Join an existing league with a share code
+              </p>
+            </button>
+          </div>
+        )}
+
+        {/* Leagues List */}
+        <div>
+          <h2 className="text-2xl font-bold mb-6">
+            {hasLeagues ? 'Your Leagues' : 'Get Started'}
           </h2>
 
-          {leagues.length === 0 ? (
+          {!hasLeagues ? (
             <div className="text-center py-16">
               <div className="flex justify-center mb-6">
                 <img
@@ -153,26 +207,23 @@ export default function DashboardPage() {
               </p>
             </div>
           ) : (
-            <div className="space-y-4">
+            <div className="space-y-3">
               {leagues.map((league) => (
                 <div
                   key={league.league_id}
                   onClick={() => {
-                    // Navigate to waiting room if user is a member
-                    // Otherwise navigate to league standings
                     if (league.player_id) {
                       router.push(`/league/${league.league_id}/waiting-room`);
                     } else {
                       router.push(`/league/${league.league_id}/standings`);
                     }
                   }}
-                  className="group flex items-center justify-between p-6 bg-[#252525] hover:bg-[#2a2a2a] rounded-lg cursor-pointer transition-all border border-gray-800 hover:border-gray-700"
+                  className="group flex items-center justify-between p-5 bg-[#252525] hover:bg-[#2a2a2a] rounded-lg cursor-pointer transition-all border border-gray-800 hover:border-gray-700"
                 >
                   <div className="flex items-center gap-4">
-                    {/* Color indicator (if player has one) */}
                     {league.player_color && (
                       <div
-                        className="w-14 h-14 rounded-full flex items-center justify-center text-white font-bold text-xl shadow-lg"
+                        className="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-lg shadow-lg"
                         style={{ backgroundColor: league.player_color }}
                       >
                         {league.player_name?.[0]?.toUpperCase() || '?'}
@@ -180,10 +231,10 @@ export default function DashboardPage() {
                     )}
 
                     <div>
-                      <h3 className="font-bold text-xl mb-1 group-hover:text-[#D2B83E] transition-colors">
+                      <h3 className="font-bold text-lg mb-0.5 group-hover:text-[#D2B83E] transition-colors">
                         {league.league_name}
                       </h3>
-                      <div className="flex items-center gap-2 text-sm text-gray-400">
+                      <div className="flex items-center gap-2 text-xs text-gray-400">
                         {league.player_name && (
                           <span>Team: {league.player_name}</span>
                         )}
@@ -205,33 +256,13 @@ export default function DashboardPage() {
             </div>
           )}
         </div>
+      </main>
 
-        {/* Quick Stats */}
-        {leagues.length > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="p-6 bg-[#252525] rounded-lg border border-gray-800">
-              <div className="text-4xl font-bold bg-gradient-to-r from-[#D2B83E] to-[#B42518] bg-clip-text text-transparent mb-2">
-                {leagues.length}
-              </div>
-              <div className="text-sm text-gray-400">Total Leagues</div>
-            </div>
-
-            <div className="p-6 bg-[#252525] rounded-lg border border-gray-800">
-              <div className="text-4xl font-bold bg-gradient-to-r from-[#D2B83E] to-[#B42518] bg-clip-text text-transparent mb-2">
-                {leagues.filter(l => l.role === 'creator').length}
-              </div>
-              <div className="text-sm text-gray-400">Created by You</div>
-            </div>
-
-            <div className="p-6 bg-[#252525] rounded-lg border border-gray-800">
-              <div className="text-4xl font-bold bg-gradient-to-r from-[#D2B83E] to-[#B42518] bg-clip-text text-transparent mb-2">
-                {leagues.filter(l => l.role === 'member').length}
-              </div>
-              <div className="text-sm text-gray-400">Joined</div>
-            </div>
-          </div>
-        )}
-      </div>
+      {/* Join League Modal */}
+      <JoinLeagueModal
+        isOpen={showJoinModal}
+        onClose={() => setShowJoinModal(false)}
+      />
     </div>
   );
 }

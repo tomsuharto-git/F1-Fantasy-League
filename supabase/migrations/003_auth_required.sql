@@ -195,8 +195,8 @@ BEGIN
   LEFT JOIN players p ON p.league_id = l.id AND p.user_id = user_uuid
   WHERE l.created_by = user_uuid
      OR EXISTS (
-       SELECT 1 FROM players
-       WHERE league_id = l.id AND user_id = user_uuid
+       SELECT 1 FROM players AS p2
+       WHERE p2.league_id = l.id AND p2.user_id = user_uuid
      )
   ORDER BY l.created_at DESC;
 END;
