@@ -20,7 +20,11 @@ export default function JoinPage() {
         setLoading(true);
         setError(null);
 
-        const leagueData = await getLeagueByShareCode(code);
+        // Decode the share code (handles URL encoding like + for space)
+        const decodedCode = decodeURIComponent(code);
+        console.log('Join page - Share code:', { raw: code, decoded: decodedCode });
+
+        const leagueData = await getLeagueByShareCode(decodedCode);
 
         if (!leagueData) {
           setError('League not found. Check your share code and try again.');
