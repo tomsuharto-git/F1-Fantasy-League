@@ -86,12 +86,7 @@ export default function DashboardPage() {
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-12 gap-4">
-          <div>
-            <h1 className="text-4xl font-bold mb-2 bg-gradient-to-r from-[#D2B83E] to-[#B42518] bg-clip-text text-transparent">
-              Welcome, {displayName}! 👋
-            </h1>
-            <p className="text-gray-400">{user.email}</p>
-          </div>
+          <p className="text-gray-400">{user.email}</p>
 
           <button
             onClick={handleSignOut}
