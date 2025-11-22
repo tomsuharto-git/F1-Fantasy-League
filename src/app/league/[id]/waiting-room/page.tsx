@@ -6,6 +6,7 @@ import { createClient } from '@/lib/auth/client';
 import { useLeague } from '@/hooks/useLeague';
 import { usePlayerReadyRealtime } from '@/hooks/useRealtime';
 import { showNotification } from '@/components/shared/NotificationSystem';
+import { ArrowLeft, GripVertical } from 'lucide-react';
 
 interface WaitingRoomProps {
   params: {
@@ -20,6 +21,8 @@ export default function WaitingRoomPage({ params }: WaitingRoomProps) {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [authLoading, setAuthLoading] = useState(true);
+  const [draftOrder, setDraftOrder] = useState<'random' | 'manual'>('random');
+  const [manualOrder, setManualOrder] = useState<string[]>([]);
 
   // Get current authenticated user
   useEffect(() => {
@@ -44,6 +47,16 @@ export default function WaitingRoomPage({ params }: WaitingRoomProps) {
     loadUser();
   }, [router, supabase]);
 
+  // Initialize manual order when players change
+  useEffect(() => {
+    if (league?.players) {
+      const playerIds = league.players.map(p => p.id);
+      if (manualOrder.length === 0 || manualOrder.length !== playerIds.length) {
+        setManualOrder(playerIds);
+      }
+    }
+  }, [league?.players, manualOrder.length]);
+
   // Real-time updates for player ready status
   usePlayerReadyRealtime(params.id, () => {
     refresh();
@@ -66,14 +79,47 @@ export default function WaitingRoomPage({ params }: WaitingRoomProps) {
     await toggleReady(currentPlayer.id, !currentPlayer.is_ready);
   };
 
-  // Check if all players with user_id are ready
+  // Move player up in manual order
+  const movePlayerUp = (index: number) => {
+    if (index === 0) return;
+    const newOrder = [...manualOrder];
+    [newOrder[index], newOrder[index - 1]] = [newOrder[index - 1], newOrder[index]];
+    setManualOrder(newOrder);
+  };
+
+  // Move player down in manual order
+  const movePlayerDown = (index: number) => {
+    if (index === manualOrder.length - 1) return;
+    const newOrder = [...manualOrder];
+    [newOrder[index], newOrder[index + 1]] = [newOrder[index + 1], newOrder[index]];
+    setManualOrder(newOrder);
+  };
+
+  // Get players in display order
+  const getDisplayPlayers = () => {
+    if (!league?.players) return [];
+
+    if (draftOrder === 'random') {
+      return [...league.players];
+    }
+
+    // Manual order - sort by manualOrder array
+    return manualOrder
+      .map(id => league.players?.find(p => p.id === id))
+      .filter(Boolean) as typeof league.players;
+  };
+
+  // Check if all players are ready
   const claimedPlayers = league?.players?.filter(p => p.user_id) || [];
   const allPlayersReady = claimedPlayers.length >= 2 &&
                           claimedPlayers.every(p => p.is_ready);
 
+  // Check if current user is creator
+  const isCreator = league?.created_by === currentUserId;
+
   // Start draft
   const handleStartDraft = () => {
-    // TODO: Create race and navigate to draft
+    // TODO: Save draft order and create race
     showNotification('Draft starting...', 'success');
     // router.push(`/draft/${raceId}`);
   };
@@ -82,7 +128,7 @@ export default function WaitingRoomPage({ params }: WaitingRoomProps) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#D2B83E] mx-auto"></div>
           <p className="mt-4 text-gray-400">Loading...</p>
         </div>
       </div>
@@ -96,7 +142,7 @@ export default function WaitingRoomPage({ params }: WaitingRoomProps) {
           <p className="text-red-400 mb-4">League not found</p>
           <button
             onClick={() => router.push('/dashboard')}
-            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded"
+            className="px-4 py-2 bg-gradient-to-r from-[#D2B83E] to-[#B42518] hover:from-[#E5C94F] hover:to-[#C53829] rounded"
           >
             Go to Dashboard
           </button>
@@ -107,21 +153,42 @@ export default function WaitingRoomPage({ params }: WaitingRoomProps) {
 
   const currentPlayer = league.players?.find(p => p.user_id === currentUserId);
   const shareUrl = `${window.location.origin}/join/${league.share_code}`;
-  const unclaimedPlayers = league.players?.filter(p => !p.user_id) || [];
+  const teamCount = league.players?.length || 0;
 
   return (
-    <div className="min-h-screen p-4">
-      <div className="max-w-4xl mx-auto">
-        {/* Header */}
+    <div className="min-h-screen">
+      {/* Header */}
+      <header className="border-b border-gray-800 bg-[#1e1e1e]">
+        <div className="max-w-7xl mx-auto px-6 py-4">
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => router.push('/dashboard')}
+              className="p-2 hover:bg-[#2a2a2a] rounded-lg transition-colors"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </button>
+            <img
+              src="/grid-kings-logo-transparent.png"
+              alt="Grid Kings"
+              className="h-10 w-auto"
+            />
+          </div>
+        </div>
+      </header>
+
+      <main className="max-w-4xl mx-auto px-6 py-8">
+        {/* Title */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">{league.name}</h1>
+          <h1 className="text-3xl font-bold mb-2 bg-gradient-to-r from-[#D2B83E] to-[#B42518] bg-clip-text text-transparent">
+            Draft Waiting Room
+          </h1>
           <p className="text-gray-400">
-            {league.drivers_per_team} drivers per team • {league.players?.length || 0} teams
+            {league.name} • {league.drivers_per_team} drivers per team • {teamCount} {teamCount === 1 ? 'team' : 'teams'}
           </p>
         </div>
 
         {/* Share Link Section */}
-        <div className="bg-gray-800 rounded-lg p-6 mb-6">
+        <div className="bg-[#252525] rounded-lg p-6 mb-6 border border-gray-800">
           <h2 className="text-xl font-bold mb-4">📤 Invite Players</h2>
           <p className="text-gray-400 mb-4">
             Share this link with your friends to join the league:
@@ -132,98 +199,151 @@ export default function WaitingRoomPage({ params }: WaitingRoomProps) {
               type="text"
               value={shareUrl}
               readOnly
-              className="flex-1 px-3 py-2 bg-gray-700 border border-gray-600 rounded focus:outline-none"
+              className="flex-1 px-3 py-2 bg-[#1e1e1e] border border-gray-700 rounded focus:outline-none text-white"
             />
             <button
               onClick={copyShareLink}
-              className={`px-4 py-2 rounded font-bold transition-colors ${
+              className={`px-4 py-2 rounded font-medium transition-colors ${
                 copied
                   ? 'bg-green-600 hover:bg-green-700'
-                  : 'bg-blue-600 hover:bg-blue-700'
+                  : 'bg-gradient-to-r from-[#D2B83E] to-[#B42518] hover:from-[#E5C94F] hover:to-[#C53829]'
               }`}
             >
-              {copied ? '✓ Copied!' : 'Copy Link'}
+              {copied ? 'Copied!' : 'Copy Link'}
             </button>
           </div>
 
-          <div className="mt-4 p-3 bg-blue-900 border border-blue-700 rounded">
-            <p className="text-sm text-blue-200">
+          <div className="mt-4 p-3 bg-[#1e1e1e] border border-gray-700 rounded">
+            <p className="text-sm text-gray-300">
               💡 <strong>Share Code:</strong> {league.share_code}
             </p>
           </div>
         </div>
 
+        {/* Draft Order Selection (Creator Only) */}
+        {isCreator && (
+          <div className="bg-[#252525] rounded-lg p-6 mb-6 border border-gray-800">
+            <h2 className="text-xl font-bold mb-4">🎲 Draft Order</h2>
+
+            <div className="space-y-3 mb-4">
+              <label className={`flex items-start p-4 rounded-lg cursor-pointer transition-all border ${
+                draftOrder === 'random'
+                  ? 'bg-[#1e1e1e] border-[#D2B83E]'
+                  : 'bg-[#1e1e1e] border-gray-800 hover:border-gray-700'
+              }`}>
+                <input
+                  type="radio"
+                  name="draftOrder"
+                  checked={draftOrder === 'random'}
+                  onChange={() => setDraftOrder('random')}
+                  className="mt-1 mr-4 accent-[#D2B83E]"
+                />
+                <div className="flex-1">
+                  <div className="font-medium">Random Order</div>
+                  <div className="text-sm text-gray-400 mt-1">Teams will be randomly assigned draft positions</div>
+                </div>
+              </label>
+
+              <label className={`flex items-start p-4 rounded-lg cursor-pointer transition-all border ${
+                draftOrder === 'manual'
+                  ? 'bg-[#1e1e1e] border-[#D2B83E]'
+                  : 'bg-[#1e1e1e] border-gray-800 hover:border-gray-700'
+              }`}>
+                <input
+                  type="radio"
+                  name="draftOrder"
+                  checked={draftOrder === 'manual'}
+                  onChange={() => setDraftOrder('manual')}
+                  className="mt-1 mr-4 accent-[#D2B83E]"
+                />
+                <div className="flex-1">
+                  <div className="font-medium">Manual Order</div>
+                  <div className="text-sm text-gray-400 mt-1">Drag teams to reorder the draft</div>
+                </div>
+              </label>
+            </div>
+          </div>
+        )}
+
         {/* Players List */}
-        <div className="bg-gray-800 rounded-lg p-6 mb-6">
+        <div className="bg-[#252525] rounded-lg p-6 mb-6 border border-gray-800">
           <h2 className="text-xl font-bold mb-4">
-            👥 Teams ({league.players?.length || 0})
+            👥 Teams ({teamCount})
           </h2>
 
           <div className="space-y-3">
-            {league.players
-              ?.sort((a, b) => (a.draft_position || 0) - (b.draft_position || 0))
-              .map((player) => (
-                <div
-                  key={player.id}
-                  className="flex items-center justify-between p-4 bg-gray-700 rounded"
-                >
-                  <div className="flex items-center gap-3">
-                    {/* Color indicator */}
-                    <div
-                      className="w-6 h-6 rounded-full"
-                      style={{ backgroundColor: player.color }}
-                    />
-
-                    {/* Player name */}
-                    <div>
-                      <p className="font-medium">
-                        {player.display_name}
-                        {player.user_id === currentUserId && (
-                          <span className="ml-2 text-xs text-blue-400">(You)</span>
-                        )}
-                      </p>
-                      <p className="text-sm text-gray-400">
-                        Draft position: {player.draft_position}
-                        {!player.user_id && (
-                          <span className="ml-2 text-yellow-400">• Waiting to join</span>
-                        )}
-                      </p>
+            {getDisplayPlayers().map((player, index) => (
+              <div
+                key={player.id}
+                className="flex items-center justify-between p-4 bg-[#1e1e1e] rounded-lg border border-gray-800"
+              >
+                <div className="flex items-center gap-3 flex-1">
+                  {/* Manual reorder controls (creator only) */}
+                  {isCreator && draftOrder === 'manual' && (
+                    <div className="flex flex-col gap-1">
+                      <button
+                        onClick={() => movePlayerUp(index)}
+                        disabled={index === 0}
+                        className="text-gray-500 hover:text-[#D2B83E] disabled:opacity-30"
+                      >
+                        ▲
+                      </button>
+                      <button
+                        onClick={() => movePlayerDown(index)}
+                        disabled={index === getDisplayPlayers().length - 1}
+                        className="text-gray-500 hover:text-[#D2B83E] disabled:opacity-30"
+                      >
+                        ▼
+                      </button>
                     </div>
+                  )}
+
+                  {/* Color indicator */}
+                  <div
+                    className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold shadow-lg"
+                    style={{ backgroundColor: player.color }}
+                  >
+                    {player.display_name?.[0]?.toUpperCase() || '?'}
                   </div>
 
-                  {/* Ready status */}
-                  <div className="flex items-center gap-2">
-                    {player.user_id ? (
-                      player.is_ready ? (
-                        <span className="text-green-400 font-medium">✓ Ready</span>
-                      ) : (
-                        <span className="text-gray-400">Not Ready</span>
-                      )
-                    ) : (
-                      <span className="text-yellow-400 text-sm">Unclaimed</span>
-                    )}
+                  {/* Player name */}
+                  <div>
+                    <p className="font-medium">
+                      {player.display_name}
+                      {player.user_id === currentUserId && (
+                        <span className="ml-2 text-xs text-[#D2B83E]">(You)</span>
+                      )}
+                      {league.created_by === player.user_id && (
+                        <span className="ml-2 text-xs text-gray-400">(Creator)</span>
+                      )}
+                    </p>
                   </div>
                 </div>
-              ))}
-          </div>
 
-          {/* Show unclaimed teams count */}
-          {unclaimedPlayers.length > 0 && (
-            <div className="mt-4 p-3 bg-yellow-900/20 border border-yellow-700 rounded">
-              <p className="text-sm text-yellow-400">
-                ⏳ {unclaimedPlayers.length} {unclaimedPlayers.length === 1 ? 'team' : 'teams'} waiting for players to join
-              </p>
-            </div>
-          )}
+                {/* Ready status */}
+                <div className="flex items-center gap-2">
+                  {player.user_id ? (
+                    player.is_ready ? (
+                      <span className="text-green-400 font-medium">Ready</span>
+                    ) : (
+                      <span className="text-gray-500">Not Ready</span>
+                    )
+                  ) : (
+                    <span className="text-yellow-400 text-sm">Waiting...</span>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
 
           {/* Current player ready toggle */}
           {currentPlayer && (
             <div className="mt-6 pt-6 border-t border-gray-700">
               <button
                 onClick={handleToggleReady}
-                className={`w-full py-3 rounded font-bold transition-colors ${
+                className={`w-full py-3 rounded-lg font-medium transition-all ${
                   currentPlayer.is_ready
-                    ? 'bg-gray-600 hover:bg-gray-700'
+                    ? 'bg-[#2a2a2a] hover:bg-[#333333] border border-gray-700'
                     : 'bg-green-600 hover:bg-green-700'
                 }`}
               >
@@ -234,15 +354,15 @@ export default function WaitingRoomPage({ params }: WaitingRoomProps) {
         </div>
 
         {/* Start Draft Section */}
-        {allPlayersReady && (
-          <div className="bg-green-900 border border-green-700 rounded-lg p-6">
-            <h3 className="text-xl font-bold mb-2">🏁 Ready to Draft!</h3>
+        {allPlayersReady && isCreator && (
+          <div className="bg-green-900/20 border border-green-700 rounded-lg p-6">
+            <h3 className="text-xl font-bold mb-2 text-green-400">🏁 Ready to Draft!</h3>
             <p className="text-green-200 mb-4">
               All players are ready. Start the draft when you're all set!
             </p>
             <button
               onClick={handleStartDraft}
-              className="w-full py-3 bg-green-600 hover:bg-green-700 rounded font-bold"
+              className="w-full py-3 bg-green-600 hover:bg-green-700 rounded-lg font-medium"
             >
               Start Draft
             </button>
@@ -251,19 +371,16 @@ export default function WaitingRoomPage({ params }: WaitingRoomProps) {
 
         {/* Waiting message */}
         {!allPlayersReady && (
-          <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
+          <div className="bg-[#252525] border border-gray-700 rounded-lg p-6">
             <h3 className="font-bold mb-2">⏳ Waiting for players...</h3>
             <p className="text-gray-400 text-sm">
-              The draft will start once all players mark themselves as ready.
-              {unclaimedPlayers.length > 0 && (
-                <span className="block mt-2 text-yellow-400">
-                  Share the link above so {unclaimedPlayers.length} more {unclaimedPlayers.length === 1 ? 'player' : 'players'} can join.
-                </span>
-              )}
+              {claimedPlayers.length < 2
+                ? 'Need at least 2 players to start the draft. Share the code above to invite friends!'
+                : 'The draft will start once all players mark themselves as ready.'}
             </p>
           </div>
         )}
-      </div>
+      </main>
     </div>
   );
 }
