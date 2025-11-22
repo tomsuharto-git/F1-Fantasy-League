@@ -6,7 +6,7 @@ import { createClient } from '@/lib/auth/client';
 import { useLeague } from '@/hooks/useLeague';
 import { usePlayerReadyRealtime } from '@/hooks/useRealtime';
 import { showNotification } from '@/components/shared/NotificationSystem';
-import { ArrowLeft, GripVertical } from 'lucide-react';
+import { ArrowLeft, Share2, Info, Shuffle, Users, Flag, Clock } from 'lucide-react';
 
 interface WaitingRoomProps {
   params: {
@@ -189,7 +189,10 @@ export default function WaitingRoomPage({ params }: WaitingRoomProps) {
 
         {/* Share Link Section */}
         <div className="bg-[#252525] rounded-lg p-6 mb-6 border border-gray-800">
-          <h2 className="text-xl font-bold mb-4">📤 Invite Players</h2>
+          <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
+            <Share2 className="w-5 h-5" />
+            Invite Players
+          </h2>
           <p className="text-gray-400 mb-4">
             Share this link with your friends to join the league:
           </p>
@@ -213,9 +216,10 @@ export default function WaitingRoomPage({ params }: WaitingRoomProps) {
             </button>
           </div>
 
-          <div className="mt-4 p-3 bg-[#1e1e1e] border border-gray-700 rounded">
+          <div className="mt-4 p-3 bg-[#1e1e1e] border border-gray-700 rounded flex items-start gap-2">
+            <Info className="w-4 h-4 mt-0.5 flex-shrink-0 text-[#D2B83E]" />
             <p className="text-sm text-gray-300">
-              💡 <strong>Share Code:</strong> {league.share_code}
+              <strong>Share Code:</strong> {league.share_code}
             </p>
           </div>
         </div>
@@ -223,7 +227,10 @@ export default function WaitingRoomPage({ params }: WaitingRoomProps) {
         {/* Draft Order Selection (Creator Only) */}
         {isCreator && (
           <div className="bg-[#252525] rounded-lg p-6 mb-6 border border-gray-800">
-            <h2 className="text-xl font-bold mb-4">🎲 Draft Order</h2>
+            <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
+              <Shuffle className="w-5 h-5" />
+              Draft Order
+            </h2>
 
             <div className="space-y-3 mb-4">
               <label className={`flex items-start p-4 rounded-lg cursor-pointer transition-all border ${
@@ -267,8 +274,9 @@ export default function WaitingRoomPage({ params }: WaitingRoomProps) {
 
         {/* Players List */}
         <div className="bg-[#252525] rounded-lg p-6 mb-6 border border-gray-800">
-          <h2 className="text-xl font-bold mb-4">
-            👥 Teams ({teamCount})
+          <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
+            <Users className="w-5 h-5" />
+            Teams ({teamCount})
           </h2>
 
           <div className="space-y-3">
@@ -356,7 +364,10 @@ export default function WaitingRoomPage({ params }: WaitingRoomProps) {
         {/* Start Draft Section */}
         {allPlayersReady && isCreator && (
           <div className="bg-green-900/20 border border-green-700 rounded-lg p-6">
-            <h3 className="text-xl font-bold mb-2 text-green-400">🏁 Ready to Draft!</h3>
+            <h3 className="text-xl font-bold mb-2 text-green-400 flex items-center gap-2">
+              <Flag className="w-5 h-5" />
+              Ready to Draft!
+            </h3>
             <p className="text-green-200 mb-4">
               All players are ready. Start the draft when you're all set!
             </p>
@@ -372,7 +383,10 @@ export default function WaitingRoomPage({ params }: WaitingRoomProps) {
         {/* Waiting message */}
         {!allPlayersReady && (
           <div className="bg-[#252525] border border-gray-700 rounded-lg p-6">
-            <h3 className="font-bold mb-2">⏳ Waiting for players...</h3>
+            <h3 className="font-bold mb-2 flex items-center gap-2">
+              <Clock className="w-5 h-5" />
+              Waiting for players...
+            </h3>
             <p className="text-gray-400 text-sm">
               {claimedPlayers.length < 2
                 ? 'Need at least 2 players to start the draft. Share the code above to invite friends!'
