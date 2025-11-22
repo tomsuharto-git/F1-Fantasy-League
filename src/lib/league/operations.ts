@@ -212,7 +212,7 @@ export async function startDraft(
 
   if (draftOrder === 'random') {
     // Random shuffle
-    orderedPlayerIds = shuffleArray(league.players.map(p => p.id));
+    orderedPlayerIds = shuffleArray(league.players.map((p: Player) => p.id));
   } else {
     // Use manual order
     if (!manualOrder || manualOrder.length !== league.players.length) {
