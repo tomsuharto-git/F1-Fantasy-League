@@ -248,22 +248,60 @@ export async function startDraft(
     }
   }
 
-  // Create race for this draft
-  const { data: race, error: raceError } = await supabase
+  // Check if a draft race already exists
+  const { data: existingRace } = await supabase
     .from('races')
-    .insert({
-      league_id: leagueId,
-      race_number: 1,
-      race_name: 'Draft Race',
-      status: 'drafting',
-      draft_complete: false,
-      results_finalized: false
-    })
-    .select()
+    .select('*')
+    .eq('league_id', leagueId)
+    .eq('race_number', 1)
     .single();
 
-  if (raceError || !race) {
-    throw new Error('Failed to create race');
+  let race;
+
+  if (existingRace) {
+    // Use existing race and reset it for new draft
+    const { data: updatedRace, error: updateError } = await supabase
+      .from('races')
+      .update({
+        status: 'drafting',
+        draft_complete: false,
+        results_finalized: false
+      })
+      .eq('id', existingRace.id)
+      .select()
+      .single();
+
+    if (updateError || !updatedRace) {
+      throw new Error('Failed to reset existing race');
+    }
+
+    // Delete old draft picks
+    await supabase
+      .from('draft_picks')
+      .delete()
+      .eq('race_id', existingRace.id);
+
+    race = updatedRace;
+  } else {
+    // Create new race for this draft
+    const { data: newRace, error: raceError } = await supabase
+      .from('races')
+      .insert({
+        league_id: leagueId,
+        race_number: 1,
+        race_name: 'Draft Race',
+        status: 'drafting',
+        draft_complete: false,
+        results_finalized: false
+      })
+      .select()
+      .single();
+
+    if (raceError || !newRace) {
+      throw new Error('Failed to create race');
+    }
+
+    race = newRace;
   }
 
   // Update league status to active
