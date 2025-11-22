@@ -208,6 +208,12 @@ export interface OpenF1Session {
   country_name: string;
 }
 
+export interface OpenF1TokenResponse {
+  access_token: string;
+  cached?: boolean;
+  expires_in?: number;
+}
+
 // Ergast API
 export interface ErgastRace {
   season: string;
