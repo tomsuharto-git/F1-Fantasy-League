@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { createClient } from '@/lib/auth/client';
 import { useLeague } from '@/hooks/useLeague';
 import { usePlayerReadyRealtime } from '@/hooks/useRealtime';
 import { showNotification } from '@/components/shared/NotificationSystem';
@@ -14,15 +15,34 @@ interface WaitingRoomProps {
 
 export default function WaitingRoomPage({ params }: WaitingRoomProps) {
   const router = useRouter();
+  const supabase = createClient();
   const { league, loading, error, toggleReady, refresh } = useLeague(params.id);
-  const [currentPlayerId, setCurrentPlayerId] = useState<string | null>(null);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [authLoading, setAuthLoading] = useState(true);
 
-  // Get current player from localStorage
+  // Get current authenticated user
   useEffect(() => {
-    const playerId = localStorage.getItem(`league_${params.id}_player`);
-    setCurrentPlayerId(playerId);
-  }, [params.id]);
+    async function loadUser() {
+      try {
+        const { data: { user }, error: userError } = await supabase.auth.getUser();
+
+        if (userError || !user) {
+          router.push('/signin');
+          return;
+        }
+
+        setCurrentUserId(user.id);
+      } catch (error) {
+        console.error('Failed to load user:', error);
+        router.push('/signin');
+      } finally {
+        setAuthLoading(false);
+      }
+    }
+
+    loadUser();
+  }, [router, supabase]);
 
   // Real-time updates for player ready status
   usePlayerReadyRealtime(params.id, () => {
@@ -40,17 +60,16 @@ export default function WaitingRoomPage({ params }: WaitingRoomProps) {
 
   // Toggle current player ready status
   const handleToggleReady = async () => {
-    if (!currentPlayerId) return;
-    
-    const currentPlayer = league?.players?.find(p => p.id === currentPlayerId);
+    const currentPlayer = league?.players?.find(p => p.user_id === currentUserId);
     if (!currentPlayer) return;
 
-    await toggleReady(currentPlayerId, !currentPlayer.is_ready);
+    await toggleReady(currentPlayer.id, !currentPlayer.is_ready);
   };
 
-  // Check if all players are ready
-  const allPlayersReady = league?.players?.every(p => p.is_ready) && 
-                          (league?.players?.length || 0) >= 2;
+  // Check if all players with user_id are ready
+  const claimedPlayers = league?.players?.filter(p => p.user_id) || [];
+  const allPlayersReady = claimedPlayers.length >= 2 &&
+                          claimedPlayers.every(p => p.is_ready);
 
   // Start draft
   const handleStartDraft = () => {
@@ -59,12 +78,12 @@ export default function WaitingRoomPage({ params }: WaitingRoomProps) {
     // router.push(`/draft/${raceId}`);
   };
 
-  if (loading) {
+  if (authLoading || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
-          <p className="mt-4 text-gray-400">Loading league...</p>
+          <p className="mt-4 text-gray-400">Loading...</p>
         </div>
       </div>
     );
@@ -76,18 +95,19 @@ export default function WaitingRoomPage({ params }: WaitingRoomProps) {
         <div className="text-center">
           <p className="text-red-400 mb-4">League not found</p>
           <button
-            onClick={() => router.push('/')}
+            onClick={() => router.push('/dashboard')}
             className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded"
           >
-            Go Home
+            Go to Dashboard
           </button>
         </div>
       </div>
     );
   }
 
-  const currentPlayer = league.players?.find(p => p.id === currentPlayerId);
+  const currentPlayer = league.players?.find(p => p.user_id === currentUserId);
   const shareUrl = `${window.location.origin}/join/${league.share_code}`;
+  const unclaimedPlayers = league.players?.filter(p => !p.user_id) || [];
 
   return (
     <div className="min-h-screen p-4">
@@ -106,7 +126,7 @@ export default function WaitingRoomPage({ params }: WaitingRoomProps) {
           <p className="text-gray-400 mb-4">
             Share this link with your friends to join the league:
           </p>
-          
+
           <div className="flex gap-2">
             <input
               type="text"
@@ -117,8 +137,8 @@ export default function WaitingRoomPage({ params }: WaitingRoomProps) {
             <button
               onClick={copyShareLink}
               className={`px-4 py-2 rounded font-bold transition-colors ${
-                copied 
-                  ? 'bg-green-600 hover:bg-green-700' 
+                copied
+                  ? 'bg-green-600 hover:bg-green-700'
                   : 'bg-blue-600 hover:bg-blue-700'
               }`}
             >
@@ -140,45 +160,61 @@ export default function WaitingRoomPage({ params }: WaitingRoomProps) {
           </h2>
 
           <div className="space-y-3">
-            {league.players?.map((player) => (
-              <div
-                key={player.id}
-                className="flex items-center justify-between p-4 bg-gray-700 rounded"
-              >
-                <div className="flex items-center gap-3">
-                  {/* Color indicator */}
-                  <div
-                    className="w-6 h-6 rounded-full"
-                    style={{ backgroundColor: player.color }}
-                  />
-                  
-                  {/* Player name */}
-                  <div>
-                    <p className="font-medium">
-                      {player.display_name}
-                      {player.id === currentPlayerId && (
-                        <span className="ml-2 text-xs text-blue-400">(You)</span>
-                      )}
-                    </p>
-                    {player.draft_position && (
+            {league.players
+              ?.sort((a, b) => (a.draft_position || 0) - (b.draft_position || 0))
+              .map((player) => (
+                <div
+                  key={player.id}
+                  className="flex items-center justify-between p-4 bg-gray-700 rounded"
+                >
+                  <div className="flex items-center gap-3">
+                    {/* Color indicator */}
+                    <div
+                      className="w-6 h-6 rounded-full"
+                      style={{ backgroundColor: player.color }}
+                    />
+
+                    {/* Player name */}
+                    <div>
+                      <p className="font-medium">
+                        {player.display_name}
+                        {player.user_id === currentUserId && (
+                          <span className="ml-2 text-xs text-blue-400">(You)</span>
+                        )}
+                      </p>
                       <p className="text-sm text-gray-400">
                         Draft position: {player.draft_position}
+                        {!player.user_id && (
+                          <span className="ml-2 text-yellow-400">• Waiting to join</span>
+                        )}
                       </p>
+                    </div>
+                  </div>
+
+                  {/* Ready status */}
+                  <div className="flex items-center gap-2">
+                    {player.user_id ? (
+                      player.is_ready ? (
+                        <span className="text-green-400 font-medium">✓ Ready</span>
+                      ) : (
+                        <span className="text-gray-400">Not Ready</span>
+                      )
+                    ) : (
+                      <span className="text-yellow-400 text-sm">Unclaimed</span>
                     )}
                   </div>
                 </div>
-
-                {/* Ready status */}
-                <div className="flex items-center gap-2">
-                  {player.is_ready ? (
-                    <span className="text-green-400 font-medium">✓ Ready</span>
-                  ) : (
-                    <span className="text-gray-400">Not Ready</span>
-                  )}
-                </div>
-              </div>
-            ))}
+              ))}
           </div>
+
+          {/* Show unclaimed teams count */}
+          {unclaimedPlayers.length > 0 && (
+            <div className="mt-4 p-3 bg-yellow-900/20 border border-yellow-700 rounded">
+              <p className="text-sm text-yellow-400">
+                ⏳ {unclaimedPlayers.length} {unclaimedPlayers.length === 1 ? 'team' : 'teams'} waiting for players to join
+              </p>
+            </div>
+          )}
 
           {/* Current player ready toggle */}
           {currentPlayer && (
@@ -219,6 +255,11 @@ export default function WaitingRoomPage({ params }: WaitingRoomProps) {
             <h3 className="font-bold mb-2">⏳ Waiting for players...</h3>
             <p className="text-gray-400 text-sm">
               The draft will start once all players mark themselves as ready.
+              {unclaimedPlayers.length > 0 && (
+                <span className="block mt-2 text-yellow-400">
+                  Share the link above so {unclaimedPlayers.length} more {unclaimedPlayers.length === 1 ? 'player' : 'players'} can join.
+                </span>
+              )}
             </p>
           </div>
         )}

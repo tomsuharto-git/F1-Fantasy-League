@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { createClient } from '@/lib/auth/client';
+import { showNotification } from '@/components/shared/NotificationSystem';
 import type { League, Player } from '@/lib/types';
 
 interface JoinLeagueProps {
@@ -10,41 +12,89 @@ interface JoinLeagueProps {
 
 export function JoinLeague({ league }: JoinLeagueProps) {
   const router = useRouter();
+  const supabase = createClient();
   const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [joiningLoading, setJoiningLoading] = useState(false);
+  const [availableTeams, setAvailableTeams] = useState<Player[]>([]);
+  const [currentUser, setCurrentUser] = useState<any>(null);
 
-  // Check if user already claimed a team
   useEffect(() => {
-    const storedPlayerId = localStorage.getItem(`league_${league.id}_player`);
-    if (storedPlayerId) {
-      router.push(`/league/${league.id}/waiting-room`);
+    async function checkAuthAndTeams() {
+      try {
+        // Get current user
+        const { data: { user }, error: userError } = await supabase.auth.getUser();
+
+        if (userError || !user) {
+          router.push('/signin');
+          return;
+        }
+
+        setCurrentUser(user);
+
+        // Check if user already has a player in this league
+        const existingPlayer = league.players?.find(p => p.user_id === user.id);
+        if (existingPlayer) {
+          showNotification('You already joined this league', 'info');
+          router.push(`/league/${league.id}/waiting-room`);
+          return;
+        }
+
+        // Get unclaimed teams (players with null user_id)
+        const unclaimed = league.players?.filter(p => !p.user_id) || [];
+        setAvailableTeams(unclaimed);
+      } catch (error) {
+        console.error('Failed to load teams:', error);
+        showNotification('Failed to load teams', 'error');
+      } finally {
+        setLoading(false);
+      }
     }
-  }, [league.id, router]);
+
+    checkAuthAndTeams();
+  }, [league.id, league.players, router, supabase]);
 
   const handleJoin = async () => {
-    if (!selectedTeamId) return;
+    if (!selectedTeamId || !currentUser) return;
 
     try {
-      setLoading(true);
+      setJoiningLoading(true);
 
-      // Store the selected team (player) ID in localStorage
-      localStorage.setItem(`league_${league.id}_player`, selectedTeamId);
+      // Update the selected player with current user's ID
+      const { error } = await supabase
+        .from('players')
+        .update({
+          user_id: currentUser.id,
+          is_verified: true
+        })
+        .eq('id', selectedTeamId)
+        .eq('league_id', league.id)
+        .is('user_id', null); // Only update if not already claimed
 
+      if (error) throw error;
+
+      showNotification('Successfully joined league!', 'success');
       router.push(`/league/${league.id}/waiting-room`);
     } catch (error) {
       console.error('Failed to join league:', error);
-      alert('Failed to join league. Please try again.');
+      showNotification('Failed to join league. Please try again.', 'error');
     } finally {
-      setLoading(false);
+      setJoiningLoading(false);
     }
   };
 
-  // Get unclaimed teams (players)
-  const availableTeams = league.players?.filter(player => {
-    // Check if team is already claimed (has localStorage entry)
-    const claimed = localStorage.getItem(`league_${league.id}_player`) === player.id;
-    return !claimed;
-  }) || [];
+  if (loading) {
+    return (
+      <div className="max-w-2xl mx-auto p-6">
+        <div className="bg-gray-800 rounded-lg p-6">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+            <p className="text-gray-400">Loading...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-2xl mx-auto p-6">
@@ -104,16 +154,16 @@ export function JoinLeague({ league }: JoinLeagueProps) {
 
           <button
             onClick={handleJoin}
-            disabled={!selectedTeamId || loading || availableTeams.length === 0}
+            disabled={!selectedTeamId || joiningLoading || availableTeams.length === 0}
             className={`
               w-full py-3 rounded font-bold transition-colors
-              ${!selectedTeamId || loading || availableTeams.length === 0
+              ${!selectedTeamId || joiningLoading || availableTeams.length === 0
                 ? 'bg-gray-600 cursor-not-allowed'
                 : 'bg-blue-600 hover:bg-blue-700'
               }
             `}
           >
-            {loading ? 'Joining...' : 'Join League'}
+            {joiningLoading ? 'Joining...' : 'Join League'}
           </button>
         </div>
       </div>

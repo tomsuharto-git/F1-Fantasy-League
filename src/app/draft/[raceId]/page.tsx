@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import { createClient } from '@/lib/auth/client';
 import { useDraft } from '@/hooks/useDraft';
 import { ergast } from '@/lib/api/ergast';
 import { makeDraftPick, undoLastPick, completeDraft } from '@/lib/draft/logic';
@@ -167,11 +168,23 @@ export default function DraftPage() {
     );
   }
 
+  // Get current user's player ID by matching user_id
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+
+  useEffect(() => {
+    async function loadUser() {
+      const supabaseClient = createClient();
+      const { data: { user } } = await supabaseClient.auth.getUser();
+      if (user) {
+        setCurrentUserId(user.id);
+      }
+    }
+    loadUser();
+  }, []);
+
+  const currentUserPlayer = league?.players?.find(p => p.user_id === currentUserId);
   const currentPlayer = draftHook.currentPickInfo?.player;
-  const localPlayerId = typeof window !== 'undefined'
-    ? localStorage.getItem(`league_${league.id}_player`)
-    : null;
-  const isMyTurn = currentPlayer?.id === localPlayerId;
+  const isMyTurn = currentPlayer?.id === currentUserPlayer?.id;
 
   return (
     <div className="min-h-screen p-4">

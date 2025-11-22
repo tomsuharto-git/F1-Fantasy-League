@@ -6,6 +6,13 @@ import type { League, CreateLeagueInput, Player } from '../types';
  * Create a new league
  */
 export async function createLeague(input: CreateLeagueInput): Promise<League> {
+  // Get current authenticated user
+  const { data: { user }, error: userError } = await supabase.auth.getUser();
+
+  if (userError || !user) {
+    throw new Error('Must be authenticated to create a league');
+  }
+
   // Insert league
   const { data: league, error: leagueError } = await supabase
     .from('leagues')
@@ -24,7 +31,7 @@ export async function createLeague(input: CreateLeagueInput): Promise<League> {
   }
 
   // Create players for each team
-  const players = await createPlayers(league.id, input.teams, input.draft_order);
+  const players = await createPlayers(league.id, input.teams, input.draft_order, user.id);
 
   return {
     ...league,
@@ -34,26 +41,33 @@ export async function createLeague(input: CreateLeagueInput): Promise<League> {
 
 /**
  * Create players for a league
+ * The first player (draft position 1) is automatically assigned to the creator
  */
 async function createPlayers(
   leagueId: string,
   teams: Array<{ name: string; color: string }>,
-  draftOrder: 'random' | 'manual'
+  draftOrder: 'random' | 'manual',
+  creatorUserId: string
 ): Promise<Player[]> {
   // Determine draft positions
-  const positions = draftOrder === 'random' 
+  const positions = draftOrder === 'random'
     ? shuffleArray([...Array(teams.length)].map((_, i) => i + 1))
     : teams.map((_, i) => i + 1);
 
-  const playersToInsert = teams.map((team, index) => ({
-    league_id: leagueId,
-    display_name: team.name,
-    color: team.color,
-    draft_position: positions[index],
-    user_id: null,
-    is_verified: false,
-    is_ready: false
-  }));
+  const playersToInsert = teams.map((team, index) => {
+    const draftPosition = positions[index];
+    const isCreator = draftPosition === 1;
+
+    return {
+      league_id: leagueId,
+      display_name: team.name,
+      color: team.color,
+      draft_position: draftPosition,
+      user_id: isCreator ? creatorUserId : null,
+      is_verified: isCreator,
+      is_ready: false
+    };
+  });
 
   const { data: players, error } = await supabase
     .from('players')

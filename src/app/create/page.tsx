@@ -71,12 +71,7 @@ export default function CreateLeaguePage() {
     try {
       setLoading(true);
       const league = await createLeague(formData);
-      
-      // Store the first player as the current user (league creator)
-      if (league.players && league.players.length > 0) {
-        localStorage.setItem(`league_${league.id}_player`, league.players[0].id);
-      }
-      
+
       showNotification('League created successfully!', 'success');
       router.push(`/league/${league.id}/waiting-room`);
     } catch (error) {
