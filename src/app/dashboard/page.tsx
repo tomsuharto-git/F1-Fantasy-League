@@ -105,7 +105,7 @@ export default function DashboardPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
           <button
             onClick={() => router.push('/create')}
-            className="group p-8 bg-gradient-to-r from-[#D2B83E] to-[#B42518] hover:from-[#E5C94F] hover:to-[#C53829] rounded-lg text-left transition-all transform hover:scale-105 shadow-lg"
+            className="group p-8 bg-gradient-to-r from-[#D2B83E] to-[#C3693B] hover:from-[#E5C94F] hover:to-[#D47A4C] rounded-lg text-left transition-all transform hover:scale-105 shadow-lg"
           >
             <div className="text-4xl mb-3">➕</div>
             <h3 className="text-2xl font-bold mb-2 text-white">Create New League</h3>
@@ -121,7 +121,7 @@ export default function DashboardPage() {
                 router.push(`/join/${code.toUpperCase()}`);
               }
             }}
-            className="group p-8 bg-gradient-to-r from-[#D2B83E] to-[#B42518] hover:from-[#E5C94F] hover:to-[#C53829] rounded-lg text-left transition-all transform hover:scale-105 shadow-lg"
+            className="group p-8 bg-gradient-to-r from-[#C3693B] to-[#B42518] hover:from-[#D47A4C] hover:to-[#C53829] rounded-lg text-left transition-all transform hover:scale-105 shadow-lg"
           >
             <div className="text-4xl mb-3">🤝</div>
             <h3 className="text-2xl font-bold mb-2 text-white">Join League</h3>
