@@ -19,6 +19,7 @@ export function useLeague(leagueId: string | null) {
     }
 
     async function fetchLeague() {
+      if (!leagueId) return;
       try {
         setLoading(true);
         const data = await getLeague(leagueId);
