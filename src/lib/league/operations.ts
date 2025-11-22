@@ -24,7 +24,8 @@ export async function createLeague(input: CreateLeagueInput): Promise<League> {
       type: input.type,
       max_races: input.max_races,
       drivers_per_team: input.drivers_per_team,
-      status: 'setup'
+      status: 'setup',
+      created_by: user.id
     })
     .select()
     .single();
