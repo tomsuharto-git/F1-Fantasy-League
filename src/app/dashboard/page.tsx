@@ -40,6 +40,14 @@ export default function DashboardPage() {
 
         setUser(user);
 
+        // Check for redirect after signin
+        const redirectPath = sessionStorage.getItem('redirectAfterSignin');
+        if (redirectPath) {
+          sessionStorage.removeItem('redirectAfterSignin');
+          router.push(redirectPath);
+          return;
+        }
+
         const { data, error } = await supabase.rpc('get_user_leagues');
 
         if (error) {

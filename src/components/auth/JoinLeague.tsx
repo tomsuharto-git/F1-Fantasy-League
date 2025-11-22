@@ -27,6 +27,9 @@ export function JoinLeague({ league }: JoinLeagueProps) {
         const { data: { user }, error: userError } = await supabase.auth.getUser();
 
         if (userError || !user) {
+          // Store current path for redirect after signin
+          const currentPath = window.location.pathname;
+          sessionStorage.setItem('redirectAfterSignin', currentPath);
           router.push('/signin');
           return;
         }
