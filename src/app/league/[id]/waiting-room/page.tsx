@@ -52,11 +52,16 @@ export default function WaitingRoomPage({ params }: WaitingRoomProps) {
   useEffect(() => {
     if (league?.players) {
       const playerIds = league.players.map(p => p.id);
-      if (manualOrder.length === 0 || manualOrder.length !== playerIds.length) {
+      // Only update if manualOrder is empty or has different players
+      if (manualOrder.length === 0) {
+        setManualOrder(playerIds);
+      } else if (manualOrder.length !== playerIds.length) {
+        // Players were added/removed - reset manual order
         setManualOrder(playerIds);
       }
     }
-  }, [league?.players, manualOrder.length]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [league?.players]);
 
   // Real-time updates for player ready status
   usePlayerReadyRealtime(params.id, () => {
