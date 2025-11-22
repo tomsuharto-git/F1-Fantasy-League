@@ -80,6 +80,10 @@ export default function DashboardPage() {
   }
 
   const hasLeagues = leagues.length > 0;
+  const displayName = user.user_metadata?.full_name ||
+                     user.user_metadata?.name ||
+                     user.email?.split('@')[0] ||
+                     'User';
 
   return (
     <div className="min-h-screen">
@@ -97,13 +101,13 @@ export default function DashboardPage() {
             </div>
 
             {/* User Menu */}
-            <div className="flex items-center gap-4">
-              <span className="text-sm text-gray-400 hidden md:block">
-                {user.email}
+            <div className="flex items-center gap-3">
+              <span className="text-sm text-gray-300">
+                {displayName}
               </span>
               <button
                 onClick={handleSignOut}
-                className="px-4 py-2 bg-[#2a2a2a] hover:bg-[#333333] text-white text-sm rounded-lg transition-all border border-gray-700"
+                className="px-3 py-1.5 bg-[#2a2a2a] hover:bg-[#333333] text-white text-xs rounded-md transition-all border border-gray-700"
               >
                 Sign Out
               </button>
