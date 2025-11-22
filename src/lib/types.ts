@@ -241,6 +241,8 @@ export interface ErgastGridPosition {
 // UI STATE TYPES
 // ============================================================================
 
+export type LiveConnectionStatus = 'disconnected' | 'connecting' | 'connected' | 'error';
+
 export interface APIStatus {
   lastUpdate: Date | null;
   isConnected: boolean;
