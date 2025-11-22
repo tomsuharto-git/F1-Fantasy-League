@@ -1,11 +1,14 @@
 // League Management Functions
-import { supabase } from '../supabase';
+import type { SupabaseClient } from '@supabase/supabase-js';
+import { createClient } from '@/lib/auth/client';
 import type { League, CreateLeagueInput, Player } from '../types';
 
 /**
  * Create a new league
  */
 export async function createLeague(input: CreateLeagueInput): Promise<League> {
+  const supabase = createClient();
+
   // Get current authenticated user
   const { data: { user }, error: userError } = await supabase.auth.getUser();
 
@@ -73,6 +76,7 @@ async function createCreatorPlayer(
  * Get league by ID
  */
 export async function getLeague(leagueId: string): Promise<League | null> {
+  const supabase = createClient();
   const { data, error } = await supabase
     .from('leagues')
     .select(`
@@ -91,6 +95,7 @@ export async function getLeague(leagueId: string): Promise<League | null> {
  * Get league by share code
  */
 export async function getLeagueByShareCode(shareCode: string): Promise<League | null> {
+  const supabase = createClient();
   const { data, error } = await supabase
     .from('leagues')
     .select(`
@@ -111,6 +116,7 @@ export async function updateLeagueStatus(
   leagueId: string,
   status: 'setup' | 'active' | 'complete'
 ): Promise<void> {
+  const supabase = createClient();
   const { error } = await supabase
     .from('leagues')
     .update({ status })
@@ -123,6 +129,7 @@ export async function updateLeagueStatus(
  * Get all leagues for a user
  */
 export async function getUserLeagues(userId: string): Promise<League[]> {
+  const supabase = createClient();
   const { data, error } = await supabase
     .from('players')
     .select(`
@@ -142,6 +149,7 @@ export async function updatePlayerReady(
   playerId: string,
   isReady: boolean
 ): Promise<void> {
+  const supabase = createClient();
   const { error } = await supabase
     .from('players')
     .update({ is_ready: isReady })
@@ -154,6 +162,7 @@ export async function updatePlayerReady(
  * Check if all players are ready
  */
 export async function areAllPlayersReady(leagueId: string): Promise<boolean> {
+  const supabase = createClient();
   const { data, error } = await supabase
     .from('players')
     .select('is_ready')
