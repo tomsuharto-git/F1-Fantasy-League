@@ -2,6 +2,35 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Formula1 Font Faces */
+@font-face {
+  font-family: 'Formula1-Black';
+  src: url('/fonts/Formula1-Black 2.ttf') format('truetype');
+  font-weight: 900;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Formula1-Bold';
+  src: url('/fonts/Formula1-Bold_web 2.ttf') format('truetype');
+  font-weight: 700;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Formula1-Regular';
+  src: url('/fonts/Formula1-Regular-1 2.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Formula1-Wide';
+  src: url('/fonts/Formula1-Wide 2.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+}
+
 @layer base {
   * {
     @apply border-gray-700;
