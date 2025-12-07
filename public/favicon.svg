@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#D2B83E"/>
+      <stop offset="100%" style="stop-color:#B42518"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="32" height="32" fill="#1a1a1a" rx="4.8"/>
+
+  <!-- Crown shape -->
+  <g transform="translate(4.8, 8) scale(0.32)">
+    <!-- Crown base -->
+    <path d="M5 50 L15 25 L35 40 L50 15 L65 40 L85 25 L95 50 L85 55 L15 55 Z"
+          fill="url(#bg)" stroke="#D2B83E" stroke-width="2"/>
+    <!-- Crown bottom -->
+    <rect x="15" y="55" width="70" height="15" rx="3" fill="url(#bg)"/>
+    <!-- Crown jewels -->
+    <circle cx="50" cy="35" r="5" fill="#1a1a1a"/>
+    <circle cx="30" cy="42" r="3" fill="#1a1a1a"/>
+    <circle cx="70" cy="42" r="3" fill="#1a1a1a"/>
+  </g>
+
+  <!-- GK text -->
+  <text x="16" y="27.2"
+        font-family="Arial, sans-serif"
+        font-size="3.84"
+        font-weight="bold"
+        fill="#D2B83E"
+        text-anchor="middle">GK</text>
+</svg>

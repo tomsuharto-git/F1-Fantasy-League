@@ -90,6 +90,7 @@ export interface Driver {
   team: string;
   startPosition: number;
   tier?: number;
+  headshotUrl?: string | null;
 }
 
 export interface DriverPosition {

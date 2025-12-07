@@ -5,12 +5,56 @@ import { useParams, useRouter } from 'next/navigation';
 import { createClient } from '@/lib/auth/client';
 import { useDraft } from '@/hooks/useDraft';
 import { openF1 } from '@/lib/api/openf1';
-import { getDriverInfo } from '@/lib/drivers';
 import { makeDraftPick, undoLastPick, completeDraft } from '@/lib/draft/logic';
 import { showNotification } from '@/components/shared/NotificationSystem';
-import { ArrowLeft, RotateCcw, CheckCircle } from 'lucide-react';
+import { ArrowLeft, RotateCcw, CheckCircle, Clock, Flag } from 'lucide-react';
 import { DriverCard } from '@/components/draft/DriverCard';
 import type { Race, League, Player, Driver } from '@/lib/types';
+
+interface RaceInfo {
+  raceName: string;
+  circuitName: string;
+  country: string;
+  raceStart: string | null;
+  meetingKey: number;
+}
+
+function useCountdown(targetDate: string | null) {
+  const [timeLeft, setTimeLeft] = useState<{
+    days: number;
+    hours: number;
+    minutes: number;
+    seconds: number;
+  } | null>(null);
+
+  useEffect(() => {
+    if (!targetDate) return;
+
+    const calculateTimeLeft = () => {
+      const now = new Date().getTime();
+      const target = new Date(targetDate).getTime();
+      const difference = target - now;
+
+      if (difference <= 0) {
+        setTimeLeft(null);
+        return;
+      }
+
+      setTimeLeft({
+        days: Math.floor(difference / (1000 * 60 * 60 * 24)),
+        hours: Math.floor((difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)),
+        minutes: Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60)),
+        seconds: Math.floor((difference % (1000 * 60)) / 1000),
+      });
+    };
+
+    calculateTimeLeft();
+    const interval = setInterval(calculateTimeLeft, 1000);
+    return () => clearInterval(interval);
+  }, [targetDate]);
+
+  return timeLeft;
+}
 
 export default function DraftPage() {
   const params = useParams();
@@ -20,9 +64,12 @@ export default function DraftPage() {
   const [race, setRace] = useState<Race | null>(null);
   const [league, setLeague] = useState<League | null>(null);
   const [allDrivers, setAllDrivers] = useState<Driver[]>([]);
+  const [raceInfo, setRaceInfo] = useState<RaceInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+
+  const countdown = useCountdown(raceInfo?.raceStart || null);
 
   // Load race, league, and drivers
   useEffect(() => {
@@ -62,35 +109,19 @@ export default function DraftPage() {
 
         setLeague(leagueData);
 
-        // Vegas GP Starting Grid (Hardcoded)
-        const vegasGrid: Driver[] = [
-          // Tier 1 (P1-P5)
-          { id: 'NOR', code: 'NOR', name: 'Lando Norris', number: 4, team: 'McLaren', startPosition: 1, tier: 1 },
-          { id: 'VER', code: 'VER', name: 'Max Verstappen', number: 1, team: 'Red Bull Racing', startPosition: 2, tier: 1 },
-          { id: 'SAI', code: 'SAI', name: 'Carlos Sainz', number: 55, team: 'Williams', startPosition: 3, tier: 1 },
-          { id: 'RUS', code: 'RUS', name: 'George Russell', number: 63, team: 'Mercedes', startPosition: 4, tier: 1 },
-          { id: 'PIA', code: 'PIA', name: 'Oscar Piastri', number: 81, team: 'McLaren', startPosition: 5, tier: 1 },
-          // Tier 2 (P6-P10)
-          { id: 'LAW', code: 'LAW', name: 'Liam Lawson', number: 30, team: 'Red Bull Racing', startPosition: 6, tier: 2 },
-          { id: 'ALO', code: 'ALO', name: 'Fernando Alonso', number: 14, team: 'Aston Martin', startPosition: 7, tier: 2 },
-          { id: 'HAD', code: 'HAD', name: 'Isack Hadjar', number: 21, team: 'Racing Bulls', startPosition: 8, tier: 2 },
-          { id: 'LEC', code: 'LEC', name: 'Charles Leclerc', number: 16, team: 'Ferrari', startPosition: 9, tier: 2 },
-          { id: 'GAS', code: 'GAS', name: 'Pierre Gasly', number: 10, team: 'Alpine', startPosition: 10, tier: 2 },
-          // Tier 3 (P11-P15)
-          { id: 'HUL', code: 'HUL', name: 'Nico Hulkenberg', number: 27, team: 'Kick Sauber', startPosition: 11, tier: 3 },
-          { id: 'STR', code: 'STR', name: 'Lance Stroll', number: 18, team: 'Aston Martin', startPosition: 12, tier: 3 },
-          { id: 'OCO', code: 'OCO', name: 'Esteban Ocon', number: 31, team: 'Haas', startPosition: 13, tier: 3 },
-          { id: 'BEA', code: 'BEA', name: 'Oliver Bearman', number: 87, team: 'Haas', startPosition: 14, tier: 3 },
-          { id: 'COL', code: 'COL', name: 'Franco Colapinto', number: 43, team: 'Williams', startPosition: 15, tier: 3 },
-          // Tier 4 (P16-P20)
-          { id: 'ALB', code: 'ALB', name: 'Alex Albon', number: 23, team: 'Williams', startPosition: 16, tier: 4 },
-          { id: 'ANT', code: 'ANT', name: 'Kimi Antonelli', number: 12, team: 'Mercedes', startPosition: 17, tier: 4 },
-          { id: 'BOR', code: 'BOR', name: 'Gabriel Bortoleto', number: 5, team: 'Kick Sauber', startPosition: 18, tier: 4 },
-          { id: 'TSU', code: 'TSU', name: 'Yuki Tsunoda', number: 22, team: 'Racing Bulls', startPosition: 19, tier: 4 },
-          { id: 'HAM', code: 'HAM', name: 'Lewis Hamilton', number: 44, team: 'Ferrari', startPosition: 20, tier: 4 },
-        ];
+        // Fetch starting grid from OpenF1 API
+        const { drivers: gridDrivers, raceInfo: info } = await openF1.getStartingGrid();
 
-        setAllDrivers(vegasGrid);
+        if (gridDrivers.length > 0) {
+          setAllDrivers(gridDrivers);
+        } else {
+          console.warn('OpenF1 API returned no drivers, using empty grid');
+          setAllDrivers([]);
+        }
+
+        if (info) {
+          setRaceInfo(info);
+        }
       } catch (err) {
         console.error('Failed to load draft data:', err);
         setError('Failed to load draft data');
@@ -125,20 +156,22 @@ export default function DraftPage() {
     if (!draftHook.currentPickInfo) return;
     if (!isMyTurn) return;
 
-    try {
-      await makeDraftPick(
-        raceId,
-        draftHook.currentPickInfo.player.id,
-        driver,
-        draftHook.currentPickInfo.pickNumber
-      );
+    const { player, pickNumber } = draftHook.currentPickInfo;
 
-      showNotification(
-        `${draftHook.currentPickInfo.player.display_name} picked ${driver.name}`,
-        'success'
-      );
+    // Optimistic update - show the pick immediately
+    draftHook.addOptimisticPick(driver, player.id, pickNumber);
+
+    try {
+      await makeDraftPick(raceId, player.id, driver, pickNumber);
+
+      // Sync with server to get the real pick data
+      await draftHook.refresh();
+
+      showNotification(`${player.display_name} picked ${driver.name}`, 'success');
     } catch (error) {
       console.error('Failed to make pick:', error);
+      // Revert optimistic update on error
+      await draftHook.refresh();
       showNotification('Failed to make pick. Try again.', 'error');
     }
   };
@@ -194,162 +227,262 @@ export default function DraftPage() {
 
   const currentUserPlayer = league?.players?.find(p => p.user_id === currentUserId);
   const currentPlayer = draftHook.currentPickInfo?.player;
-  const isMyTurn = currentPlayer?.id === currentUserPlayer?.id;
+  // Only true if both player IDs exist and match (prevents undefined === undefined being true)
+  const isMyTurn = !!(currentPlayer?.id && currentUserPlayer?.id && currentPlayer.id === currentUserPlayer.id);
 
   return (
     <div className="min-h-screen">
       {/* Header */}
       <header className="border-b border-gray-800 bg-[#1e1e1e]">
         <div className="max-w-7xl mx-auto px-6 py-4">
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => router.push(`/league/${league.id}/waiting-room`)}
-              className="p-2 hover:bg-[#2a2a2a] rounded-lg transition-colors"
-            >
-              <ArrowLeft className="w-5 h-5" />
-            </button>
-            <div>
-              <h1 className="text-2xl font-bold bg-gradient-to-r from-[#D2B83E] to-[#B42518] bg-clip-text text-transparent">
-                {race.race_name} Draft
-              </h1>
-              <p className="text-sm text-gray-400">{league.name}</p>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <button
+                onClick={() => router.push(`/league/${league.id}/waiting-room`)}
+                className="p-2 hover:bg-[#2a2a2a] rounded-lg transition-colors"
+              >
+                <ArrowLeft className="w-5 h-5" />
+              </button>
+              <div>
+                <p className="text-xs text-gray-500 uppercase tracking-wider">{league.name}</p>
+                <h1 className="text-xl font-bold bg-gradient-to-r from-[#D2B83E] to-[#B42518] bg-clip-text text-transparent">
+                  {raceInfo?.raceName || race.race_name}
+                </h1>
+                {raceInfo && (
+                  <p className="text-xs text-gray-400">{raceInfo.circuitName}</p>
+                )}
+              </div>
             </div>
+
+            {/* Countdown */}
+            {countdown && (
+              <div className="flex items-center gap-3 bg-[#252525] rounded-lg px-4 py-2 border border-gray-700">
+                <Flag className="w-4 h-4 text-[#D2B83E]" />
+                <div className="flex items-center gap-2 text-sm font-mono">
+                  {countdown.days > 0 && (
+                    <span className="text-white">{countdown.days}<span className="text-gray-500 text-xs ml-0.5">d</span></span>
+                  )}
+                  <span className="text-white">{String(countdown.hours).padStart(2, '0')}<span className="text-gray-500 text-xs ml-0.5">h</span></span>
+                  <span className="text-white">{String(countdown.minutes).padStart(2, '0')}<span className="text-gray-500 text-xs ml-0.5">m</span></span>
+                  <span className="text-[#D2B83E]">{String(countdown.seconds).padStart(2, '0')}<span className="text-gray-500 text-xs ml-0.5">s</span></span>
+                </div>
+              </div>
+            )}
+            {!countdown && raceInfo?.raceStart && (
+              <div className="flex items-center gap-2 bg-green-900/30 rounded-lg px-4 py-2 border border-green-700">
+                <Flag className="w-4 h-4 text-green-400" />
+                <span className="text-sm text-green-400 font-medium">Race in Progress</span>
+              </div>
+            )}
           </div>
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-6 py-8">
-        {/* Current Pick Info */}
-        {!draftHook.isComplete && draftHook.currentPickInfo && (
-          <div
-            className="mb-6 p-6 rounded-lg border-2"
-            style={{
-              backgroundColor: currentPlayer?.color + '20',
-              borderColor: currentPlayer?.color
-            }}
-          >
-            <div>
-              <p className="text-sm text-gray-400">
-                Pick {draftHook.currentPickInfo.pickNumber} of {draftHook.currentPickInfo.totalPicks}
-              </p>
-              <h2 className="text-2xl font-bold">
-                {currentPlayer?.display_name}'s turn
-                {isMyTurn && <span className="ml-2 text-sm text-[#D2B83E]">(You)</span>}
-              </h2>
-            </div>
-          </div>
-        )}
-
+      <main className="max-w-7xl mx-auto px-6 py-6">
         {/* Draft Complete Banner */}
         {draftHook.isComplete && (
-          <div className="mb-6 p-6 bg-green-900/20 border-2 border-green-500 rounded-lg">
-            <h2 className="text-2xl font-bold mb-2 flex items-center gap-2">
-              <CheckCircle className="w-6 h-6" />
-              Draft Complete!
-            </h2>
-            <p className="text-gray-300 mb-4">All teams are set. Good luck in the race!</p>
+          <div className="mb-4 p-4 bg-green-900/20 border border-green-700 rounded-lg flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <CheckCircle className="w-5 h-5 text-green-400" />
+              <div>
+                <span className="font-bold text-white">Draft Complete!</span>
+                <span className="text-gray-400 ml-2 text-sm">All teams are set</span>
+              </div>
+            </div>
             <button
               onClick={handleComplete}
-              className="px-6 py-3 bg-green-600 hover:bg-green-700 rounded-lg font-medium transition-colors"
+              className="px-4 py-2 bg-green-600 hover:bg-green-700 rounded-lg text-sm font-medium transition-colors"
             >
               Finish Draft
             </button>
           </div>
         )}
 
-        {/* Controls */}
-        <div className="mb-6">
-          <button
-            onClick={handleUndo}
-            disabled={draftHook.picks.length === 0}
-            className={`px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2 ${
-              draftHook.picks.length === 0
-                ? 'bg-[#1e1e1e] text-gray-600 cursor-not-allowed'
-                : 'bg-[#252525] hover:bg-[#2a2a2a] border border-gray-700'
-            }`}
-          >
-            <RotateCcw className="w-4 h-4" />
-            Undo Last Pick
-          </button>
+        {/* Team Rosters - Horizontal at top */}
+        <div className="mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {league.players
+              ?.sort((a, b) => (a.draft_position || 0) - (b.draft_position || 0))
+              .map(player => {
+                const playerPicks = draftHook.picks.filter(p => p.player_id === player.id);
+                const isCurrentPicker = currentPlayer?.id === player.id;
+
+                // Group picks by tier
+                const picksByTier: Record<number, typeof playerPicks> = { 1: [], 2: [], 3: [], 4: [] };
+                playerPicks.forEach(pick => {
+                  const pos = pick.start_position ?? 20;
+                  const tier = pos <= 5 ? 1 : pos <= 10 ? 2 : pos <= 15 ? 3 : 4;
+                  picksByTier[tier].push(pick);
+                });
+
+                return (
+                  <div
+                    key={player.id}
+                    className={`rounded-lg p-4 border-2 transition-all ${
+                      isCurrentPicker
+                        ? 'border-opacity-100'
+                        : 'border-opacity-30'
+                    }`}
+                    style={{
+                      borderColor: player.color,
+                      backgroundColor: isCurrentPicker ? player.color + '10' : '#1e1e1e'
+                    }}
+                  >
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-2">
+                        {isCurrentPicker && !draftHook.isComplete && (
+                          <div
+                            className="w-2 h-2 rounded-full animate-pulse"
+                            style={{ backgroundColor: player.color }}
+                          />
+                        )}
+                        <h4
+                          className="font-bold text-sm uppercase tracking-wide"
+                          style={{ color: player.color }}
+                        >
+                          {player.display_name}
+                        </h4>
+                        {isCurrentPicker && !draftHook.isComplete && player.id === currentUserPlayer?.id && (
+                          <span className="text-xs bg-[#D2B83E] text-black px-1.5 py-0.5 rounded font-medium animate-pulse">
+                            YOUR PICK
+                          </span>
+                        )}
+                        {isCurrentPicker && !draftHook.isComplete && player.id !== currentUserPlayer?.id && (
+                          <span className="text-xs bg-gray-500 text-white px-1.5 py-0.5 rounded font-medium animate-pulse">
+                            PICKING NOW
+                          </span>
+                        )}
+                      </div>
+                      {isCurrentPicker && !draftHook.isComplete && draftHook.currentPickInfo && (
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-gray-400">
+                            {draftHook.currentPickInfo.pickNumber}/{draftHook.currentPickInfo.totalPicks}
+                          </span>
+                          <button
+                            onClick={handleUndo}
+                            disabled={draftHook.picks.length === 0}
+                            className={`p-1 rounded transition-colors ${
+                              draftHook.picks.length === 0
+                                ? 'text-gray-600 cursor-not-allowed'
+                                : 'text-gray-400 hover:text-white hover:bg-[#2a2a2a]'
+                            }`}
+                            title="Undo Last Pick"
+                          >
+                            <RotateCcw className="w-3 h-3" />
+                          </button>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="space-y-2">
+                      {[1, 2, 3, 4].map(tier => {
+                        const tierPick = picksByTier[tier][0];
+                        const tierColors: Record<number, string> = {
+                          1: 'bg-purple-600',
+                          2: 'bg-blue-600',
+                          3: 'bg-green-600',
+                          4: 'bg-orange-600'
+                        };
+
+                        // Find the full driver object for the pick, or construct from pick data
+                        const draftedDriver = tierPick
+                          ? allDrivers.find(d => d.code === tierPick.driver_code || d.name === tierPick.driver_name)
+                            || {
+                              id: tierPick.driver_code,
+                              code: tierPick.driver_code,
+                              name: tierPick.driver_name,
+                              number: tierPick.driver_number || 0,
+                              team: tierPick.team || '',
+                              startPosition: tierPick.start_position || 0,
+                              tier
+                            }
+                          : null;
+
+                        return (
+                          <div key={tier}>
+                            {draftedDriver ? (
+                              <DriverCard
+                                driver={draftedDriver}
+                              />
+                            ) : (
+                              <div className="flex items-center gap-2 h-[80px] border border-dashed border-gray-600 rounded-[14px] px-4">
+                                <span className={`${tierColors[tier]} text-white text-xs font-bold px-1.5 py-0.5 rounded`}>
+                                  T{tier}
+                                </span>
+                                <span className="text-gray-500 text-sm italic">Not drafted</span>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Available Drivers */}
-          <div className="lg:col-span-2">
-            <h3 className="text-xl font-bold mb-4">Available Drivers</h3>
+        {/* Available Drivers - Horizontal tiers with driver cards */}
+        <div>
+          <h3 className="text-xl font-bold mb-4">Available Drivers</h3>
 
-            {/* Group by tier */}
-            {[1, 2, 3, 4].map(tier => {
-              const tierDrivers = draftHook.availableDrivers.filter(d => d.tier === tier);
-              if (tierDrivers.length === 0) return null;
+          {(() => {
+            // Calculate which tiers the current user has already filled
+            const myPicks = currentUserPlayer
+              ? draftHook.picks.filter(p => p.player_id === currentUserPlayer.id)
+              : [];
+            const myFilledTiers = new Set<number>(
+              myPicks.map(pick => {
+                const pos = pick.start_position ?? 20;
+                return pos <= 5 ? 1 : pos <= 10 ? 2 : pos <= 15 ? 3 : 4;
+              })
+            );
 
-              return (
-                <div key={tier} className="mb-6">
-                  <h4 className="text-sm font-medium mb-3 text-gray-400 uppercase tracking-wide">
-                    {tier === 1 && 'Tier 1: Front Runners (P1-P5)'}
-                    {tier === 2 && 'Tier 2: Midfield (P6-P10)'}
-                    {tier === 3 && 'Tier 3: Back Markers (P11-P15)'}
-                    {tier === 4 && 'Tier 4: Rookies & Reserves (P16-P20)'}
-                  </h4>
+            return (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                {[1, 2, 3, 4].map(tier => {
+                  const tierDrivers = draftHook.availableDrivers.filter(d => d.tier === tier);
+                  const tierNames: Record<number, string> = {
+                    1: 'Tier 1',
+                    2: 'Tier 2',
+                    3: 'Tier 3',
+                    4: 'Tier 4'
+                  };
+                  const tierColors: Record<number, string> = {
+                    1: 'bg-purple-600',
+                    2: 'bg-blue-600',
+                    3: 'bg-green-600',
+                    4: 'bg-orange-600'
+                  };
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                    {tierDrivers.map(driver => (
-                      <DriverCard
-                        key={driver.code}
-                        driver={driver}
-                        onClick={() => handlePickDriver(driver)}
-                        disabled={!isMyTurn || draftHook.isComplete}
-                        isMyTurn={isMyTurn && !draftHook.isComplete}
-                      />
-                    ))}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-
-          {/* Team Rosters */}
-          <div>
-            <h3 className="text-xl font-bold mb-4">Team Rosters</h3>
-
-            <div className="space-y-4">
-              {league.players
-                ?.sort((a, b) => (a.draft_position || 0) - (b.draft_position || 0))
-                .map(player => {
-                  const playerPicks = draftHook.picks.filter(p => p.player_id === player.id);
+                  // Check if current user already has a driver from this tier
+                  const tierAlreadyFilled = myFilledTiers.has(tier);
 
                   return (
-                    <div key={player.id} className="bg-[#252525] rounded-lg p-4 border border-gray-800">
-                      <div className="flex items-center gap-2 mb-3">
-                        <div
-                          className="w-4 h-4 rounded-full"
-                          style={{ backgroundColor: player.color }}
-                        />
-                        <h4 className="font-bold">{player.display_name}</h4>
-                        <span className="text-xs text-gray-500">
-                          ({playerPicks.length}/{league.drivers_per_team})
-                        </span>
+                    <div key={tier} className="flex flex-col">
+                      <div className={`${tierColors[tier]} text-white text-sm font-bold px-3 py-1.5 rounded-lg inline-block w-fit mb-3 transition-opacity ${tierAlreadyFilled ? 'opacity-30' : ''}`}>
+                        {tierNames[tier]}
                       </div>
 
-                      <div className="space-y-1.5">
-                        {playerPicks.length === 0 ? (
-                          <p className="text-sm text-gray-500 italic">No picks yet</p>
-                        ) : (
-                          playerPicks.map(pick => (
-                            <div key={pick.id} className="text-sm bg-[#1e1e1e] rounded p-2">
-                              <div className="font-medium">{pick.driver_name}</div>
-                              <div className="text-gray-400 text-xs">
-                                {pick.team} • P{pick.start_position}
-                              </div>
-                            </div>
-                          ))
+                      <div className="space-y-3 flex-1">
+                        {tierDrivers.map(driver => (
+                          <DriverCard
+                            key={driver.code}
+                            driver={driver}
+                            onClick={() => handlePickDriver(driver)}
+                            disabled={draftHook.isComplete || tierAlreadyFilled}
+                          />
+                        ))}
+                        {tierDrivers.length === 0 && (
+                          <p className="text-gray-500 text-sm italic text-center py-4">All drafted</p>
                         )}
                       </div>
                     </div>
                   );
                 })}
-            </div>
-          </div>
+              </div>
+            );
+          })()}
         </div>
       </main>
     </div>

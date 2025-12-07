@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/auth/client';
 import { useLeague } from '@/hooks/useLeague';
-import { usePlayerReadyRealtime } from '@/hooks/useRealtime';
+import { usePlayerReadyRealtime, useRaceStatusRealtime } from '@/hooks/useRealtime';
 import { showNotification } from '@/components/shared/NotificationSystem';
 import { startDraft } from '@/lib/league/operations';
 import { ArrowLeft, Share2, Info, Shuffle, Users, Flag, Clock } from 'lucide-react';
@@ -24,6 +24,7 @@ export default function WaitingRoomPage({ params }: WaitingRoomProps) {
   const [authLoading, setAuthLoading] = useState(true);
   const [draftOrder, setDraftOrder] = useState<'random' | 'manual'>('random');
   const [manualOrder, setManualOrder] = useState<string[]>([]);
+  const [activeDraftRaceId, setActiveDraftRaceId] = useState<string | null>(null);
 
   // Get current authenticated user
   useEffect(() => {
@@ -67,6 +68,46 @@ export default function WaitingRoomPage({ params }: WaitingRoomProps) {
   usePlayerReadyRealtime(params.id, () => {
     refresh();
   });
+
+  // Real-time updates for race status - redirect when draft starts
+  useRaceStatusRealtime(params.id, (race) => {
+    if (race.status === 'drafting') {
+      showNotification('Draft is starting!', 'info');
+      router.push(`/draft/${race.id}`);
+    }
+  });
+
+  // Polling fallback: Check for active draft every 5 seconds
+  useEffect(() => {
+    async function checkForActiveDraft() {
+      const { data: races } = await supabase
+        .from('races')
+        .select('id, status')
+        .eq('league_id', params.id)
+        .eq('status', 'drafting')
+        .limit(1);
+
+      if (races && races.length > 0) {
+        setActiveDraftRaceId(races[0].id);
+      } else {
+        setActiveDraftRaceId(null);
+      }
+    }
+
+    // Check immediately
+    checkForActiveDraft();
+
+    // Then poll every 5 seconds
+    const interval = setInterval(checkForActiveDraft, 5000);
+    return () => clearInterval(interval);
+  }, [params.id, supabase]);
+
+  // Handler for Join Draft button
+  const handleJoinDraft = () => {
+    if (activeDraftRaceId) {
+      router.push(`/draft/${activeDraftRaceId}`);
+    }
+  };
 
   // Share or copy link
   const handleShare = async () => {
@@ -399,8 +440,27 @@ export default function WaitingRoomPage({ params }: WaitingRoomProps) {
           )}
         </div>
 
+        {/* Active Draft Banner - shown when draft is live */}
+        {activeDraftRaceId && (
+          <div className="bg-green-900/20 border-2 border-green-500 rounded-lg p-6 animate-pulse">
+            <h3 className="text-xl font-bold mb-2 text-green-400 flex items-center gap-2">
+              <Flag className="w-5 h-5" />
+              Draft is Live!
+            </h3>
+            <p className="text-white mb-4">
+              The draft has started. Join now to make your picks!
+            </p>
+            <button
+              onClick={handleJoinDraft}
+              className="w-full py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-bold transition-colors"
+            >
+              Join Draft →
+            </button>
+          </div>
+        )}
+
         {/* Start Draft Section */}
-        {allPlayersReady && isCreator && (
+        {allPlayersReady && isCreator && !activeDraftRaceId && (
           <div className="bg-green-900/20 border border-green-700 rounded-lg p-6">
             <h3 className="text-xl font-bold mb-2 text-green-400 flex items-center gap-2">
               <Flag className="w-5 h-5" />
@@ -419,7 +479,7 @@ export default function WaitingRoomPage({ params }: WaitingRoomProps) {
         )}
 
         {/* Waiting message */}
-        {!allPlayersReady && (
+        {!allPlayersReady && !activeDraftRaceId && (
           <div className="bg-[#252525] border border-gray-700 rounded-lg p-6">
             <h3 className="font-bold mb-2 flex items-center gap-2">
               <Clock className="w-5 h-5" />

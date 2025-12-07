@@ -33,6 +33,12 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# PWA generated files
+public/sw.js
+public/workbox-*.js
+public/sw.js.map
+public/workbox-*.js.map
+
 # Meridian working files (don't commit personal context)
 .meridian/tasks/
 .meridian/memory.jsonl

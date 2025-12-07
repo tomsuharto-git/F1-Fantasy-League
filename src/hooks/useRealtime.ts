@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 
@@ -14,7 +14,21 @@ export function useRealtime<T>(
   onUpdate?: (payload: T) => void,
   onDelete?: (payload: { old: T }) => void
 ) {
+  // Use refs to hold callbacks so they don't cause re-subscriptions
+  const onInsertRef = useRef(onInsert);
+  const onUpdateRef = useRef(onUpdate);
+  const onDeleteRef = useRef(onDelete);
+
+  // Keep refs up to date
   useEffect(() => {
+    onInsertRef.current = onInsert;
+    onUpdateRef.current = onUpdate;
+    onDeleteRef.current = onDelete;
+  }, [onInsert, onUpdate, onDelete]);
+
+  useEffect(() => {
+    console.log(`[Realtime] Subscribing to ${table} where ${filter.column}=${filter.value}`);
+
     const channel: RealtimeChannel = supabase
       .channel(`${table}-${filter.value}`)
       .on(
@@ -26,7 +40,8 @@ export function useRealtime<T>(
           filter: `${filter.column}=eq.${filter.value}`
         },
         (payload) => {
-          if (onInsert) onInsert(payload.new as T);
+          console.log(`[Realtime] INSERT received on ${table}:`, payload.new);
+          if (onInsertRef.current) onInsertRef.current(payload.new as T);
         }
       )
       .on(
@@ -38,7 +53,8 @@ export function useRealtime<T>(
           filter: `${filter.column}=eq.${filter.value}`
         },
         (payload) => {
-          if (onUpdate) onUpdate(payload.new as T);
+          console.log(`[Realtime] UPDATE received on ${table}:`, payload.new);
+          if (onUpdateRef.current) onUpdateRef.current(payload.new as T);
         }
       )
       .on(
@@ -50,15 +66,19 @@ export function useRealtime<T>(
           filter: `${filter.column}=eq.${filter.value}`
         },
         (payload) => {
-          if (onDelete) onDelete({ old: payload.old as T });
+          console.log(`[Realtime] DELETE received on ${table}:`, payload.old);
+          if (onDeleteRef.current) onDeleteRef.current({ old: payload.old as T });
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log(`[Realtime] Subscription status for ${table}:`, status);
+      });
 
     return () => {
+      console.log(`[Realtime] Unsubscribing from ${table}`);
       supabase.removeChannel(channel);
     };
-  }, [table, filter.column, filter.value, onInsert, onUpdate, onDelete]);
+  }, [table, filter.column, filter.value]);
 }
 
 /**
@@ -102,5 +122,21 @@ export function useRaceResultsRealtime(
     { column: 'race_id', value: raceId },
     onResultUpdate,
     onResultUpdate
+  );
+}
+
+/**
+ * Hook for race status updates (for draft sync)
+ * Listens for races in a league changing to 'drafting' status
+ */
+export function useRaceStatusRealtime(
+  leagueId: string,
+  onRaceUpdate: (race: any) => void
+) {
+  useRealtime(
+    'races',
+    { column: 'league_id', value: leagueId },
+    onRaceUpdate, // INSERT
+    onRaceUpdate  // UPDATE
   );
 }

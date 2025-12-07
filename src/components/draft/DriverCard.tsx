@@ -1,28 +1,33 @@
 import Image from 'next/image'
 import type { Driver } from '@/lib/types'
 
-// Team gradient configurations (exact match from Grid Kings live tracker)
+// Team gradient configurations (from Grid Kings live tracker)
 const TEAM_GRADIENTS: Record<string, { from: string; to: string; middle?: { color: string; stop: number } }> = {
   'Red Bull Racing': { from: '#1E2535', middle: { color: '#68302F', stop: 64 }, to: '#F94624' },
   'McLaren': { from: '#7B2E00', middle: { color: '#F26B00', stop: 30 }, to: '#FFC375' },
   'Ferrari': { from: '#66000A', middle: { color: '#A10819', stop: 32 }, to: '#EA122B' },
   'Mercedes': { from: '#000000', to: '#00a19b' },
-  'Aston Martin': { from: '#003D2D', to: '#00594A' },
-  'Williams': { from: '#003D7A', to: '#0066CC' },
-  'Haas': { from: '#4A0000', to: '#CC0000' },
-  'Racing Bulls': { from: '#1E2535', middle: { color: '#2952A3', stop: 50 }, to: '#3366CC' },
-  'Kick Sauber': { from: '#003D2D', to: '#00B050' },
+  'Aston Martin': { from: '#003F27', middle: { color: '#14714F', stop: 32 }, to: '#1F8E66' },
+  'Williams': { from: '#012564', to: '#64c4ff' },
+  'Haas F1 Team': { from: '#E73725', middle: { color: '#919598', stop: 71 }, to: '#5D6163' },
+  'Racing Bulls': { from: '#6692ff', to: '#1634cb' },
+  'Kick Sauber': { from: '#04B810', to: '#015901' },
   'Alpine': { from: '#ff87bc', to: '#2293d1' },
+}
+
+// Display names for teams (shorter/cleaner versions)
+const TEAM_DISPLAY_NAMES: Record<string, string> = {
+  'Red Bull Racing': 'Red Bull',
+  'Haas F1 Team': 'Haas',
 }
 
 interface DriverCardProps {
   driver: Driver
   onClick?: () => void
   disabled?: boolean
-  isMyTurn?: boolean
 }
 
-export function DriverCard({ driver, onClick, disabled = false, isMyTurn = false }: DriverCardProps) {
+export function DriverCard({ driver, onClick, disabled = false }: DriverCardProps) {
   const teamGradient = TEAM_GRADIENTS[driver.team] || { from: '#374151', to: '#6b7280' }
 
   // Build gradient string (support 2 or 3 color stops)
@@ -30,22 +35,22 @@ export function DriverCard({ driver, onClick, disabled = false, isMyTurn = false
     ? `linear-gradient(to right, ${teamGradient.from} 0%, ${teamGradient.middle.color} ${teamGradient.middle.stop}%, ${teamGradient.to} 100%)`
     : `linear-gradient(to right, ${teamGradient.from}, ${teamGradient.to})`
 
-  // Get driver image path
-  const driverImagePath = `/drivers/${driver.number}-${driver.code.toLowerCase()} 2.png`
+  // Get driver image - prefer API headshot, fallback to local file
+  const driverImagePath = driver.headshotUrl || `/drivers/${driver.number}-${driver.code.toLowerCase()}.png`
 
   return (
     <button
       onClick={onClick}
       disabled={disabled}
-      className={`bg-gray-800 border rounded-[14px] h-[105px] overflow-hidden transition-all ${
-        isMyTurn && !disabled
-          ? 'border-[#D2B83E] hover:border-[#E5C94F] transform hover:scale-[1.02] cursor-pointer'
-          : 'border-[rgba(255,255,255,0.1)] cursor-not-allowed opacity-60'
+      className={`bg-gray-800 border border-[rgba(255,255,255,0.1)] rounded-[14px] h-[80px] overflow-hidden transition-all ${
+        !disabled
+          ? 'hover:border-[rgba(255,255,255,0.3)] transform hover:scale-[1.02] cursor-pointer'
+          : 'cursor-not-allowed opacity-30'
       }`}
-      style={{ width: '100%', maxWidth: '380px' }}
+      style={{ width: '100%' }}
     >
       {/* Card Background Gradient */}
-      <div className="h-[103px] relative">
+      <div className="h-[78px] relative">
         {/* Team Gradient Background */}
         <div
           className="absolute inset-0"
@@ -55,11 +60,14 @@ export function DriverCard({ driver, onClick, disabled = false, isMyTurn = false
         />
 
         {/* Content Container */}
-        <div className="absolute inset-0 flex">
+        <div className="absolute inset-0 flex pl-3">
           {/* LEFT SECTION: Starting Position */}
-          <div className="w-[70px] flex flex-col items-center justify-center">
-            {/* Position */}
-            <div className="font-['Formula1-Black'] text-[28px] leading-[28px] text-white">
+          <div className="w-[50px] flex flex-col items-center justify-center">
+            {/* Position - using inline style for Safari font compatibility */}
+            <div
+              className="text-[24px] leading-[24px] text-white"
+              style={{ fontFamily: 'Formula1-Black, sans-serif' }}
+            >
               P{driver.startPosition}
             </div>
           </div>
@@ -67,48 +75,35 @@ export function DriverCard({ driver, onClick, disabled = false, isMyTurn = false
           {/* MIDDLE SECTION: Driver Info */}
           <div className="flex-1 relative">
             {/* Driver Image */}
-            <div className="absolute left-2 top-3 w-[65px] h-[70px] rounded-[10px] overflow-hidden">
+            <div className="absolute left-2 top-1 w-[55px] h-[60px] rounded-[8px] overflow-hidden">
               <Image
                 src={driverImagePath}
                 alt={driver.name}
-                width={65}
-                height={70}
+                width={55}
+                height={60}
                 className="object-cover"
               />
             </div>
 
             {/* Driver Name and Team */}
-            <div className="absolute left-[75px] top-5 flex flex-col gap-1 pr-3">
+            <div className="absolute left-[75px] top-4 flex flex-col gap-0.5 pr-3 text-left">
               {/* Driver Name */}
               <div className="border-b border-b-[rgba(255,255,255,0.3)] pb-0.5">
-                <p className="font-['Inter'] font-black text-[14px] leading-[18px] text-white">
+                <p
+                  className="font-black text-[13px] leading-[16px] text-white text-left"
+                  style={{ fontFamily: 'Inter, sans-serif' }}
+                >
                   {driver.name.split(' ').pop()?.toUpperCase()}
                 </p>
               </div>
 
               {/* Team Name */}
-              <p className="font-['Inter'] font-normal text-[10px] leading-[14px] text-white tracking-[0.0645px]">
-                {driver.team}
+              <p
+                className="font-normal text-[10px] leading-[14px] text-white tracking-[0.0645px] text-left"
+                style={{ fontFamily: 'Inter, sans-serif' }}
+              >
+                {TEAM_DISPLAY_NAMES[driver.team] || driver.team}
               </p>
-
-              {/* Draft Selection Indicator */}
-              {isMyTurn && !disabled && (
-                <div className="bg-[#D2B83E] rounded h-[18px] px-1.5 inline-flex items-center w-fit mt-0.5">
-                  <p className="font-['Inter'] font-bold text-[9px] leading-[13px] text-black">
-                    ✓ SELECT
-                  </p>
-                </div>
-              )}
-
-              {/* Tier Badge */}
-              <div className="mt-1">
-                <span className="text-[9px] text-white/60">
-                  {driver.tier === 1 && 'T1: P1-P5'}
-                  {driver.tier === 2 && 'T2: P6-P10'}
-                  {driver.tier === 3 && 'T3: P11-P15'}
-                  {driver.tier === 4 && 'T4: P16-P20'}
-                </span>
-              </div>
             </div>
           </div>
         </div>
